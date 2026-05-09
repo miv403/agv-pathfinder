@@ -82,49 +82,92 @@ class MainWindow(QMainWindow):
     def handle_optimization_finished(self, result):
         if result['status'] == 'success':
             print("Optimizasyon başarılı! Animasyon başlıyor...")
-            self.animation_routes = result['routes']
-            self.current_time_step = 0
-            # Biraz yavaş görelim, örneğin saniyede 1.5 - 2 adım (500ms)
-            self.animation_timer.start(500) 
+            
+            # Rotayı daha hızlı sorgulayabilmek için sözlüğe (t -> node) dönüştür
+            self.animation_routes = {}
+            self.max_t = 0
+            for vid, route in result['routes'].items():
+                t_dict = {t: node for node, t in route}
+                self.animation_routes[vid] = t_dict
+                if route:
+                    self.max_t = max(self.max_t, route[-1][1])
+                    
+            self.simulation_time = 0.0
+            
+            # FPS Ayarları: 30 FPS = ~33ms per frame
+            self.timer_interval = 33 
+            self.ms_per_logical_step = 500.0  # 1 tam adım (10m) 500ms sürsün
+            
+            self.animation_timer.start(self.timer_interval) 
         else:
             QMessageBox.critical(self, "Deadlock / Hata", result['message'])
 
     def animate_step(self):
-        active_vehicles = False
+        import math
         
-        # O anki time_step için doluluk oranlarını hesapla
+        # Süreyi ilerlet
+        self.simulation_time += (self.timer_interval / self.ms_per_logical_step)
+        
+        # O anki t floor değerindeki doluluk oranlarını hesapla (ui yazıları için)
+        current_t_floor = math.floor(self.simulation_time)
         occupancy = {loc: 0 for loc in self.road_network.pockets + self.road_network.depots}
+        
+        active_vehicles = False
         
         for vehicle in self.vehicles:
             if vehicle.vehicle_id in self.animation_routes:
-                route = self.animation_routes[vehicle.vehicle_id]
-                
-                # O anki t değerindeki durumu bul
-                current_state = None
-                for state in route:
-                    if state[1] == self.current_time_step:
-                        current_state = state
-                        break
-                        
-                if current_state:
-                    node, t = current_state
-                    loc, ntype = node
-                    vehicle.position = loc
-                    # Tipi de gönderiyoruz ki ceplerdeyken kenarda çizilsin
-                    self.simulation_view.update_vehicle_position(vehicle, ntype)
-                    active_vehicles = True
+                route_dict = self.animation_routes[vehicle.vehicle_id]
+                if not route_dict:
+                    continue
                     
+                min_t = min(route_dict.keys())
+                max_t = max(route_dict.keys())
+                
+                if self.simulation_time < min_t:
+                    # Henüz başlamadı
+                    node = route_dict[min_t]
+                    loc, ntype = node
+                    self.simulation_view.update_vehicle_position_smooth(vehicle, loc, ntype)
+                    active_vehicles = True
+                elif self.simulation_time >= max_t:
+                    # Görev bitti
+                    node = route_dict[max_t]
+                    loc, ntype = node
+                    self.simulation_view.update_vehicle_position_smooth(vehicle, loc, ntype)
                     if ntype in ('pocket', 'depot'):
                         occupancy[loc] += 1
-                elif self.current_time_step > route[-1][1]:
-                    # Görev bitti
-                    last_node = route[-1][0]
-                    if last_node[1] in ('pocket', 'depot'):
-                        occupancy[last_node[0]] += 1
-                elif self.current_time_step < route[0][1]:
-                    # Henüz başlangıç t'sine gelmedi (t_initial gecikmesi)
-                    active_vehicles = True 
+                else:
+                    # Animasyon/Tweening interpolasyon adımı
+                    active_vehicles = True
+                    t1 = math.floor(self.simulation_time)
+                    t2 = t1 + 1
+                    fraction = self.simulation_time - t1
                     
+                    if t1 in route_dict and t2 in route_dict:
+                        loc1, type1 = route_dict[t1]
+                        loc2, type2 = route_dict[t2]
+                        
+                        # 1D mesafe interpolasyonu
+                        interpolated_loc = loc1 + (loc2 - loc1) * fraction
+                        
+                        # Doluluk tespiti: Yarıdan fazlaysa type2'de say, değilse type1'de
+                        if fraction > 0.5:
+                            if type2 in ('pocket', 'depot'):
+                                occupancy[loc2] += 1
+                        else:
+                            if type1 in ('pocket', 'depot'):
+                                occupancy[loc1] += 1
+                                
+                        # UI'ı pürüzsüz güncelle
+                        self.simulation_view.update_vehicle_position_smooth(vehicle, interpolated_loc, type1, type2, fraction)
+                    else:
+                        # Fallback (normalde CA* ardışık t'ler üretir)
+                        fallback_t = t1 if t1 in route_dict else max_t
+                        loc, ntype = route_dict[fallback_t]
+                        self.simulation_view.update_vehicle_position_smooth(vehicle, loc, ntype)
+                        if ntype in ('pocket', 'depot'):
+                            occupancy[loc] += 1
+                            
         # UI üzerindeki occupancy (n/slots) yazılarını güncelle
         if hasattr(self.simulation_view, 'capacity_labels'):
             for loc, count in occupancy.items():
@@ -132,8 +175,6 @@ class MainWindow(QMainWindow):
                     cap = self.road_network.capacity['pocket'] if loc in self.road_network.pockets else self.road_network.capacity['depot']
                     self.simulation_view.capacity_labels[loc].setPlainText(f"{count}/{cap}")
                 
-        if not active_vehicles:
-            print(f"Animasyon tamamlandı. Toplam süre: t={self.current_time_step}")
+        if self.simulation_time >= self.max_t:
+            print(f"Animasyon tamamlandı. Toplam süre: t={math.floor(self.simulation_time)}")
             self.animation_timer.stop()
-            
-        self.current_time_step += 1

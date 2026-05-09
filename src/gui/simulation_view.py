@@ -121,16 +121,25 @@ class SimulationView(QGraphicsView):
         item = self.scene.addEllipse(pos.x() - 8, pos.y() - 8, 16, 16, QPen(Qt.black), QBrush(QColor(vehicle.color)))
         self.vehicle_items[vehicle.vehicle_id] = item
 
-    def update_vehicle_position(self, vehicle, ntype='path'):
-        """Aracın ekrandaki konumunu günceller."""
+    def get_type_y_offset(self, ntype):
+        """Düğüm tipine göre görsel Y ekseni kaymasını (offset) döner."""
+        if ntype == 'pocket':
+            return -30
+        elif ntype == 'depot':
+            return -32
+        return 0
+
+    def update_vehicle_position_smooth(self, vehicle, loc, type1, type2=None, fraction=0.0):
+        """Aracın ekrandaki konumunu yumuşak (interpolated) olarak günceller."""
         if vehicle.vehicle_id in self.vehicle_items:
-            pos = self.get_2d_position(vehicle.position)
+            # X/Y koordinatını bul (get_2d_position ondalıklı değerleri mükemmel eşler)
+            pos = self.get_2d_position(loc)
             
-            y_offset = 0
-            if ntype == 'pocket':
-                y_offset = -30
-            elif ntype == 'depot':
-                y_offset = -32
+            offset1 = self.get_type_y_offset(type1)
+            offset2 = self.get_type_y_offset(type2) if type2 else offset1
+            
+            # Eğer cebe/depoya girip çıkıyorsa Y offset'i de yumuşakça anime et
+            y_offset = offset1 + (offset2 - offset1) * fraction
                 
             item = self.vehicle_items[vehicle.vehicle_id]
             # setRect, posizyonu güncellemek için (ellipse x,y'si bounding box)
