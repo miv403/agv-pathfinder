@@ -1,13 +1,12 @@
 from PyQt5.QtCore import QThread, pyqtSignal
+from src.core.cooperative_astar import CooperativeAStar
 import time
-from numba import jit
 
 class SolverThread(QThread):
     """
-    Arayüzü dondurmamak için CBS ve A* algoritmalarını arka planda çalıştıracak QThread sınıfı.
-    Şu an için sadece bir taslaktır.
+    Arayüzü dondurmamak için Cooperative A* (CA*) algoritmasını arka planda çalıştıracak QThread sınıfı.
     """
-    # Algoritma bittiğinde sonuçları veya rotaları arayüze iletmek için sinyal
+    # Algoritma bittiğinde sonuçları (rotalar sözlüğü) veya hata mesajını arayüze iletmek için sinyal
     optimization_finished = pyqtSignal(object) 
     
     def __init__(self, road_network, vehicles):
@@ -19,7 +18,9 @@ class SolverThread(QThread):
         """
         Algoritmanın ana çalışma döngüsü.
         """
-        # TODO: Gerçek optimizasyon algoritmaları eklenecek
-        time.sleep(1) # Simülasyon
-        result = "Optimizasyon başarıyla tamamlandı (Taslak)"
+        solver = CooperativeAStar(self.road_network)
+        
+        # Olası bir bekleme veya uzun süreçte QThread donmaması için buradayız
+        result = solver.solve(self.vehicles)
+        
         self.optimization_finished.emit(result)
