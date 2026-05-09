@@ -99,8 +99,8 @@ class CooperativeAStar:
             for next_node in self.rn.get_neighbors(current_node):
                 next_t = current_t + 1
                 
-                # Kural 2: Ana yolda (path) beklemek yasaktır!
-                if next_node == current_node and next_node[1] == 'path':
+                # Kural 2: Ana yolda (path) beklemek yasaktır! (0. metre hariç, başlangıç noktası)
+                if next_node == current_node and next_node[1] == 'path' and current_node[0] != 0:
                     continue
                     
                 # Çakışma kontrolü
@@ -125,12 +125,6 @@ class CooperativeAStar:
         """
         self.reset()
         
-        # Max capacity check: yoldaki toplam araç sayısı depo/cep kapasitelerini aşmamalı (deadlock rule)
-        total_slots = sum(self.rn.capacity.get('pocket', 1) for _ in self.rn.pockets) + \
-                      sum(self.rn.capacity.get('depot', 3) for _ in self.rn.depots)
-                      
-        if len(vehicles) > total_slots:
-            return {"status": "error", "message": f"Araç sayısı ({len(vehicles)}) yoldaki güvenli slot sayısını ({total_slots}) aşıyor! Deadlock kaçınılmaz."}
 
         # Stage 1: Sort vehicles
         # VIP: True > False (Yani True olanlar önce gelir)
