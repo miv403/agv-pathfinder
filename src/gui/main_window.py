@@ -47,6 +47,11 @@ class MainWindow(QMainWindow):
         v = Vehicle(vehicle_id=vehicle_id, start_pos=0)
         for d in selected_depots:
             v.add_task(d)
+            
+        # Görevleri bitince merkeze (0) geri dönmesini sağla
+        if not v.tasks or v.tasks[-1] != 0:
+            v.add_task(0)
+            print(f"Araç {vehicle_id} için dönüş görevi eklendi: 0")
         
         self.vehicles.append(v)
         
@@ -87,6 +92,9 @@ class MainWindow(QMainWindow):
     def animate_step(self):
         active_vehicles = False
         
+        # O anki time_step için doluluk oranlarını hesapla
+        occupancy = {loc: 0 for loc in self.road_network.pockets + self.road_network.depots}
+        
         for vehicle in self.vehicles:
             if vehicle.vehicle_id in self.animation_routes:
                 route = self.animation_routes[vehicle.vehicle_id]
@@ -105,12 +113,24 @@ class MainWindow(QMainWindow):
                     # Tipi de gönderiyoruz ki ceplerdeyken kenarda çizilsin
                     self.simulation_view.update_vehicle_position(vehicle, ntype)
                     active_vehicles = True
+                    
+                    if ntype in ('pocket', 'depot'):
+                        occupancy[loc] += 1
                 elif self.current_time_step > route[-1][1]:
                     # Görev bitti
-                    pass
+                    last_node = route[-1][0]
+                    if last_node[1] in ('pocket', 'depot'):
+                        occupancy[last_node[0]] += 1
                 elif self.current_time_step < route[0][1]:
                     # Henüz başlangıç t'sine gelmedi (t_initial gecikmesi)
                     active_vehicles = True 
+                    
+        # UI üzerindeki occupancy (n/slots) yazılarını güncelle
+        if hasattr(self.simulation_view, 'capacity_labels'):
+            for loc, count in occupancy.items():
+                if loc in self.simulation_view.capacity_labels:
+                    cap = self.road_network.capacity['pocket'] if loc in self.road_network.pockets else self.road_network.capacity['depot']
+                    self.simulation_view.capacity_labels[loc].setPlainText(f"{count}/{cap}")
                 
         if not active_vehicles:
             print(f"Animasyon tamamlandı. Toplam süre: t={self.current_time_step}")
