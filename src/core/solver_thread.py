@@ -20,7 +20,11 @@ class SolverThread(QThread):
         """
         solver = CooperativeAStar(self.road_network)
         
-        # Olası bir bekleme veya uzun süreçte QThread donmaması için buradayız
+        t_start = time.perf_counter()
         result = solver.solve(self.vehicles)
+        t_end = time.perf_counter()
+        
+        elapsed_ms = (t_end - t_start) * 1000
+        print(f"[CA*] Hesaplama süresi: {elapsed_ms:.2f} ms ({len(self.vehicles)} araç)")
         
         self.optimization_finished.emit(result)
