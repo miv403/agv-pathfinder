@@ -7,6 +7,9 @@ class ControlPanel(QWidget):
     
     # Yeni depo eklendiğinde (pozisyon) ileten sinyal
     add_depot_signal = pyqtSignal(int)
+    
+    # Simülasyonu başlatma sinyali
+    start_simulation_signal = pyqtSignal()
 
     def __init__(self, road_network):
         super().__init__()
@@ -49,6 +52,12 @@ class ControlPanel(QWidget):
         depot_group.setLayout(depot_layout)
         layout.addWidget(depot_group)
 
+        # 3. Başlat Butonu
+        start_btn = QPushButton("Simülasyonu Başlat")
+        start_btn.setStyleSheet("background-color: #4CAF50; color: white; font-weight: bold; padding: 10px;")
+        start_btn.clicked.connect(self.on_start_clicked)
+        layout.addWidget(start_btn)
+
         layout.addStretch()
         self.setLayout(layout)
         self.setFixedWidth(250)
@@ -70,7 +79,9 @@ class ControlPanel(QWidget):
         pos = self.depot_spinbox.value()
         self.add_depot_signal.emit(pos)
 
+    def on_start_clicked(self):
+        self.start_simulation_signal.emit()
+
     def refresh_depot_list(self):
         """Yeni depo eklendiğinde checkbox listesini günceller."""
-        # TODO: Arayüzdeki checkbox'ları temizleyip self.road_network.depots'tan yeniden oluştur
         pass

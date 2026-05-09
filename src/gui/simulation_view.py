@@ -107,10 +107,17 @@ class SimulationView(QGraphicsView):
         item = self.scene.addEllipse(pos.x() - 8, pos.y() - 8, 16, 16, QPen(Qt.black), QBrush(QColor(vehicle.color)))
         self.vehicle_items[vehicle.vehicle_id] = item
 
-    def update_vehicle_position(self, vehicle):
+    def update_vehicle_position(self, vehicle, ntype='path'):
         """Aracın ekrandaki konumunu günceller."""
         if vehicle.vehicle_id in self.vehicle_items:
             pos = self.get_2d_position(vehicle.position)
+            
+            y_offset = 0
+            if ntype == 'pocket':
+                y_offset = -30
+            elif ntype == 'depot':
+                y_offset = -32
+                
             item = self.vehicle_items[vehicle.vehicle_id]
             # setRect, posizyonu güncellemek için (ellipse x,y'si bounding box)
-            item.setRect(pos.x() - 8, pos.y() - 8, 16, 16)
+            item.setRect(pos.x() - 8, pos.y() + y_offset - 8, 16, 16)
