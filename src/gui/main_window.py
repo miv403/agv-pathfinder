@@ -230,7 +230,10 @@ class MainWindow(QMainWindow):
                         if completed_count > zero_idx:
                             color = "green"
                         elif completed_count > depot_idx:
-                            color = "orange"
+                            # Yüklenmiş ve başlangıca gidiyor (orange)
+                            # Yaklaşık 500ms aralıklarla Turuncu ve Açık Yeşil arasında yanıp söner
+                            is_blink = int(self.simulation_time * 2) % 2 == 0
+                            color = "lightgreen" if is_blink else "orange"
                         elif completed_count == depot_idx:
                             # Devam eden (ongoing) görev: Araç yola çıktıysa yanıp sönsün
                             if self.simulation_time < min_t:
