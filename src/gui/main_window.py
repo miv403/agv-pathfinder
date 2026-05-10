@@ -232,7 +232,13 @@ class MainWindow(QMainWindow):
                         elif completed_count > depot_idx:
                             color = "orange"
                         elif completed_count == depot_idx:
-                            color = "inherit" # varsayılan metin rengi
+                            # Devam eden (ongoing) görev: Araç yola çıktıysa yanıp sönsün
+                            if self.simulation_time < min_t:
+                                color = "inherit"
+                            else:
+                                # Yaklaşık 500ms (1 adım) aralıklarla yanıp sönme
+                                is_blink = int(self.simulation_time * 2) % 2 == 0
+                                color = "lightgray" if is_blink else "inherit"
                         else:
                             color = "red"
                             
