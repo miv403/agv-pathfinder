@@ -47,6 +47,7 @@ class MainWindow(QMainWindow):
         # 4. Sinyalleri Bağla
         self.control_panel.add_task_signal.connect(self.handle_add_task)
         self.control_panel.add_depot_signal.connect(self.handle_add_depot)
+        self.control_panel.add_pocket_signal.connect(self.handle_add_pocket)
         self.control_panel.start_simulation_signal.connect(self.handle_start_simulation)
 
         # 5. Animasyon State
@@ -77,12 +78,13 @@ class MainWindow(QMainWindow):
         file_menu.addAction(exit_action)
 
     def save_scenario(self):
-        filename, _ = QFileDialog.getSaveFileName(self, "Senaryoyu Kaydet", "", "JSON Dosyası (*.json)")
+        filename, _ = QFileDialog.getSaveFileName(self, "Senaryoyu Kaydet", "./scenario.json", "JSON Dosyası (*.json)")
         if not filename:
             return
 
         scenario_data = {
             "depots": self.road_network.depots,
+            "pockets": self.road_network.pockets,
             "vehicles": []
         }
 
@@ -118,6 +120,10 @@ class MainWindow(QMainWindow):
             for depot_pos in data.get("depots", []):
                 self.handle_add_depot(depot_pos)
 
+            # Cepleri yükle
+            for pocket_pos in data.get("pockets", []):
+                self.handle_add_pocket(pocket_pos)
+
             # Araçları yükle
             for v_data in data.get("vehicles", []):
                 self.handle_add_task(
@@ -145,8 +151,9 @@ class MainWindow(QMainWindow):
         self.animation_routes = {}
         self.current_time_step = 0
         
-        # Depoları sıfırla (Sadece 0 kalsın)
-        self.road_network.depots = [0]
+        # Depoları ve cepleri sıfırla
+        self.road_network.depots = []
+        self.road_network.pockets = []
         self.simulation_view.update_road()
         self.control_panel.refresh_depot_list()
 
@@ -202,6 +209,17 @@ class MainWindow(QMainWindow):
             self.control_panel.refresh_depot_list()
         else:
             print(f"Uyarı: {position}. metrede zaten bir depo var.")
+
+    def handle_add_pocket(self, position):
+        if position not in self.road_network.pockets:
+            print(f"Yeni Cep Eklendi: Mesafe={position}")
+            self.road_network.add_pocket(position)
+            # Arayüzü güncelle
+            self.simulation_view.update_road()
+            for v in self.vehicles:
+                self.simulation_view.add_vehicle(v)
+        else:
+            print(f"Uyarı: {position}. metrede zaten bir cep var.")
 
     def handle_start_simulation(self):
         if not self.vehicles:

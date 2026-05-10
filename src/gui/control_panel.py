@@ -8,6 +8,9 @@ class ControlPanel(QWidget):
     # Yeni depo eklendiğinde (pozisyon) ileten sinyal
     add_depot_signal = pyqtSignal(int)
     
+    # Yeni cep eklendiğinde (pozisyon) ileten sinyal
+    add_pocket_signal = pyqtSignal(int)
+    
     # Simülasyonu başlatma sinyali
     start_simulation_signal = pyqtSignal()
 
@@ -74,6 +77,7 @@ class ControlPanel(QWidget):
         depot_layout = QHBoxLayout()
         self.depot_spinbox = QSpinBox()
         self.depot_spinbox.setRange(0, self.road_network.length)
+        self.depot_spinbox.setSingleStep(self.road_network.step)
         depot_layout.addWidget(QLabel("Mesafe:"))
         depot_layout.addWidget(self.depot_spinbox)
         
@@ -84,7 +88,23 @@ class ControlPanel(QWidget):
         depot_group.setLayout(depot_layout)
         layout.addWidget(depot_group)
 
-        # 3. Başlat Butonu
+        # 3. Dinamik Cep Ekleme Alanı
+        pocket_group = QGroupBox("Yeni Cep Ekle")
+        pocket_layout = QHBoxLayout()
+        self.pocket_spinbox = QSpinBox()
+        self.pocket_spinbox.setRange(0, self.road_network.length)
+        self.pocket_spinbox.setSingleStep(self.road_network.step)
+        pocket_layout.addWidget(QLabel("Mesafe:"))
+        pocket_layout.addWidget(self.pocket_spinbox)
+        
+        add_pocket_btn = QPushButton("Cep Ekle")
+        add_pocket_btn.clicked.connect(self.on_add_pocket_clicked)
+        pocket_layout.addWidget(add_pocket_btn)
+        
+        pocket_group.setLayout(pocket_layout)
+        layout.addWidget(pocket_group)
+
+        # 4. Başlat Butonu
         start_btn = QPushButton("Simülasyonu Başlat")
         start_btn.setStyleSheet("background-color: #4CAF50; color: white; font-weight: bold; padding: 10px;")
         start_btn.clicked.connect(self.on_start_clicked)
@@ -140,6 +160,12 @@ class ControlPanel(QWidget):
         step = self.road_network.step
         pos = round(raw_pos / step) * step
         self.add_depot_signal.emit(pos)
+
+    def on_add_pocket_clicked(self):
+        raw_pos = self.pocket_spinbox.value()
+        step = self.road_network.step
+        pos = round(raw_pos / step) * step
+        self.add_pocket_signal.emit(pos)
 
     def on_start_clicked(self):
         self.start_simulation_signal.emit()
