@@ -139,7 +139,8 @@ class MainWindow(QMainWindow):
                 "id": v.vehicle_id,
                 "start_pos": v.start_pos,
                 "direction": "İleri" if v.direction == 1 else "Geri",
-                "tasks": getattr(v, "_real_tasks", [])
+                "tasks": getattr(v, "_real_tasks", []),
+                "is_vip": getattr(v, "is_vip", False)
             }
             scenario_data["vehicles"].append(vehicle_data)
 
@@ -176,7 +177,8 @@ class MainWindow(QMainWindow):
                     v_data["id"],
                     v_data["start_pos"],
                     v_data["direction"],
-                    v_data["tasks"]
+                    v_data["tasks"],
+                    v_data.get("is_vip", False)
                 )
             
             # Araç sayacını güncelle ki çakışmasın
@@ -205,14 +207,14 @@ class MainWindow(QMainWindow):
         self.simulation_view.update_road()
         self.control_panel.refresh_depot_list()
 
-    def handle_add_task(self, vehicle_id, start_loc, direction_str, selected_depots):
-        print(f"Yeni Araç Eklendi: ID={vehicle_id}, Konum={start_loc}, Yön={direction_str}, Görevler={selected_depots}")
+    def handle_add_task(self, vehicle_id, start_loc, direction_str, selected_depots, is_vip=False):
+        print(f"Yeni Araç Eklendi: ID={vehicle_id}, Konum={start_loc}, Yön={direction_str}, Görevler={selected_depots}, VIP={is_vip}")
         
         # Yön değerini sayısal karşılığa çevir
         direction = 1 if direction_str == "İleri" else -1
         
         # Aracı kullanıcının girdiği konumda oluştur
-        v = Vehicle(vehicle_id=vehicle_id, start_pos=start_loc, direction=direction)
+        v = Vehicle(vehicle_id=vehicle_id, start_pos=start_loc, direction=direction, is_vip=is_vip)
         v._real_tasks = list(selected_depots) # gerçek görevleri tablo için sakla
         for d in selected_depots:
             v.add_task(d)
@@ -228,7 +230,11 @@ class MainWindow(QMainWindow):
         # Tabloya ekle
         row = self.info_table.rowCount()
         self.info_table.insertRow(row)
-        self.info_table.setItem(row, 0, QTableWidgetItem(str(vehicle_id)))
+        
+        display_id = str(vehicle_id)
+        if is_vip:
+            display_id += " (VIP)"
+        self.info_table.setItem(row, 0, QTableWidgetItem(display_id))
         
         color_item = QTableWidgetItem()
         color_item.setBackground(v.color)
