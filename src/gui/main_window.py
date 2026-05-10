@@ -209,6 +209,11 @@ class MainWindow(QMainWindow):
         self.control_panel.refresh_depot_list()
 
     def handle_add_task(self, vehicle_id, start_loc, direction_str, selected_depots, is_vip=False):
+        # Shortest Job First (SJF) - Görevleri toplam maliyete göre sırala
+        # Sadece VIP olmayan araçlar için (VIP zaten tek görevli)
+        if not is_vip:
+            selected_depots.sort(key=lambda t: abs(t - start_loc) + t)
+
         print(f"Yeni Araç Eklendi: ID={vehicle_id}, Konum={start_loc}, Yön={direction_str}, Görevler={selected_depots}, VIP={is_vip}")
         
         # Yön değerini sayısal karşılığa çevir
