@@ -64,7 +64,7 @@ class MainWindow(QMainWindow):
         v._real_tasks = list(selected_depots) # gerçek görevleri tablo için sakla
         for d in selected_depots:
             v.add_task(d)
-            v.add_task(start_loc)
+            v.add_task(0)
             
         print(f"Araç {vehicle_id} nihai görev listesi: {v.tasks}")
         
