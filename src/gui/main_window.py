@@ -1,4 +1,4 @@
-from PyQt5.QtWidgets import QMainWindow, QSplitter, QMessageBox, QTableWidget, QTableWidgetItem, QLabel, QAction, QFileDialog, QMenu, QDialog, QCheckBox, QScrollArea, QVBoxLayout, QDialogButtonBox, QWidget
+from PyQt5.QtWidgets import QMainWindow, QSplitter, QMessageBox, QTableWidget, QTableWidgetItem, QLabel, QAction, QFileDialog, QMenu, QDialog, QCheckBox, QScrollArea, QVBoxLayout, QDialogButtonBox, QWidget, QDoubleSpinBox
 import json
 from PyQt5.QtCore import Qt, QTimer
 
@@ -41,6 +41,38 @@ class EditNodesDialog(QDialog):
         
     def get_selected_positions(self):
         return [pos for pos, cb in self.item_checkboxes if cb.isChecked()]
+
+class SpeedDialog(QDialog):
+    def __init__(self, current_speed, parent=None):
+        super().__init__(parent)
+        self.setWindowTitle("Simülasyon Hızı")
+        self.setFixedSize(250, 150)
+        
+        layout = QVBoxLayout(self)
+        
+        info_label = QLabel(f"Mevcut Hız: <b>{current_speed}x</b>")
+        info_label.setAlignment(Qt.AlignCenter)
+        layout.addWidget(info_label)
+        
+        self.speed_spin = QDoubleSpinBox()
+        self.speed_spin.setRange(0.1, 20.0)
+        self.speed_spin.setSingleStep(0.5)
+        self.speed_spin.setValue(current_speed)
+        self.speed_spin.setSuffix("x")
+        self.speed_spin.setDecimals(1)
+        
+        layout.addWidget(QLabel("Hızı Ayarla:"))
+        layout.addWidget(self.speed_spin)
+        
+        layout.addStretch()
+        
+        buttons = QDialogButtonBox(QDialogButtonBox.Ok | QDialogButtonBox.Cancel)
+        buttons.accepted.connect(self.accept)
+        buttons.rejected.connect(self.reject)
+        layout.addWidget(buttons)
+        
+    def get_speed(self):
+        return self.speed_spin.value()
 
 class MainWindow(QMainWindow):
     def __init__(self):
@@ -92,6 +124,9 @@ class MainWindow(QMainWindow):
         self.animation_timer.timeout.connect(self.animate_step)
         self.current_time_step = 0
         self.animation_routes = {}
+        self.animation_speed_factor = 1.0
+        self.timer_interval = 33
+        self.ms_per_logical_step = 500.0
 
     def init_menu_bar(self):
         menubar = self.menuBar()
@@ -140,6 +175,13 @@ class MainWindow(QMainWindow):
         reset_all_action = QAction("Tümünü Sıfırla", self)
         reset_all_action.triggered.connect(self.reset_all)
         self.edit_menu.addAction(reset_all_action)
+        
+        # 3. Simülasyon Menüsü
+        self.sim_menu = menubar.addMenu("Simülasyon")
+        
+        speed_action = QAction("Hız Ayarları", self)
+        speed_action.triggered.connect(self.change_speed)
+        self.sim_menu.addAction(speed_action)
 
     def save_scenario(self):
         filename, _ = QFileDialog.getSaveFileName(self, "Senaryoyu Kaydet", "./scenario.json", "JSON Dosyası (*.json)")
@@ -247,6 +289,13 @@ class MainWindow(QMainWindow):
         
         self.control_panel.vehicle_count = max(0, self.control_panel.vehicle_count - 1)
         self.simulation_view.update_sensors(self.vehicles)
+
+    def change_speed(self):
+        """Simülasyon hızını değiştirmek için bir diyalog açar."""
+        dialog = SpeedDialog(self.animation_speed_factor, self)
+        if dialog.exec_() == QDialog.Accepted:
+            self.animation_speed_factor = dialog.get_speed()
+            print(f"Simülasyon hızı güncellendi: {self.animation_speed_factor}x")
 
     def handle_add_task(self, vehicle_id, start_loc, direction_str, selected_depots, is_vip=False):
         # Shortest Job First (SJF) - Görevleri toplam maliyete göre sırala
@@ -464,8 +513,9 @@ class MainWindow(QMainWindow):
     def animate_step(self):
         import math
         
-        # Süreyi ilerlet
-        self.simulation_time += (self.timer_interval / self.ms_per_logical_step)
+        # Süreyi ilerlet (Hız çarpanını uygula)
+        step_duration = self.ms_per_logical_step / self.animation_speed_factor
+        self.simulation_time += (self.timer_interval / step_duration)
         
         # O anki t floor değerindeki doluluk oranlarını hesapla (ui yazıları için)
         current_t_floor = math.floor(self.simulation_time)
