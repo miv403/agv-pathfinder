@@ -243,6 +243,9 @@ class MainWindow(QMainWindow):
         status_label.setText(status_html)
         self.info_table.setCellWidget(row, 3, status_label)
         v._table_row = row
+        
+        # Sensör renklerini güncelle
+        self.simulation_view.update_sensors(self.vehicles)
 
     def handle_add_depot(self, position):
         if position not in self.road_network.depots:
@@ -470,6 +473,9 @@ class MainWindow(QMainWindow):
                     if status_label:
                         status_label.setText(status_html)
                             
+        # Sensör renklerini güncelle
+        self.simulation_view.update_sensors(self.vehicles)
+
         # UI üzerindeki occupancy (n/slots) yazılarını güncelle
         if hasattr(self.simulation_view, 'capacity_labels'):
             for loc, count in occupancy.items():

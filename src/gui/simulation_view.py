@@ -14,6 +14,7 @@ class SimulationView(QGraphicsView):
         self.setRenderHint(QPainter.Antialiasing)
         
         self.vehicle_items = {} # vehicle_id -> QGraphicsItem map
+        self.sensor_items = {}  # sensor_pos -> QGraphicsItem map
         
         # Ekran boyutlarına göre yolu çizmek için temel ayarlar
         self.scene.setSceneRect(0, 0, 800, 600)
@@ -73,11 +74,13 @@ class SimulationView(QGraphicsView):
         pen = QPen(QColor("gray"), 30, Qt.SolidLine, Qt.RoundCap, Qt.RoundJoin)
         self.scene.addPath(path, pen)
 
-        # 2. Sensörleri Çiz (Mavi Daireler, Yolun Altında)
+        # 2. Sensörleri Çiz (Başlangıçta Kırmızı, Araç Yaklaşınca Yeşile Dönecek)
+        self.sensor_items = {}
         for s in self.road_network.sensors:
             pos = self.get_2d_position(s)
             y_offset = 25  # Yolun altına iz düşüm
-            self.scene.addEllipse(pos.x() - 5, pos.y() + y_offset - 5, 10, 10, QPen(Qt.black), QBrush(Qt.cyan))
+            ellipse = self.scene.addEllipse(pos.x() - 5, pos.y() + y_offset - 5, 10, 10, QPen(Qt.black), QBrush(Qt.red))
+            self.sensor_items[s] = ellipse
             text = self.scene.addText(f"S{s}")
             text.setPos(pos.x() - 10, pos.y() + y_offset + 5)
 
@@ -137,6 +140,9 @@ class SimulationView(QGraphicsView):
 
     def update_vehicle_position_smooth(self, vehicle, loc, type1, type2=None, fraction=0.0):
         """Aracın ekrandaki konumunu yumuşak (interpolated) olarak günceller."""
+        # Mantıksal pozisyonu da güncelle ki sensörler okuyabilsin
+        vehicle.position = loc
+        
         if vehicle.vehicle_id in self.vehicle_items:
             # X/Y koordinatını bul (get_2d_position ondalıklı değerleri mükemmel eşler)
             pos = self.get_2d_position(loc)
@@ -150,3 +156,18 @@ class SimulationView(QGraphicsView):
             item = self.vehicle_items[vehicle.vehicle_id]
             # setRect, posizyonu güncellemek için (ellipse x,y'si bounding box)
             item.setRect(pos.x() - 8, pos.y() + y_offset - 8, 16, 16)
+
+    def update_sensors(self, vehicles):
+        """Sensör renklerini en yakındaki araca göre dinamik olarak günceller."""
+        for s_pos, ellipse in self.sensor_items.items():
+            # En yakın aracın mesafesini bul (maks 20m)
+            distances = [abs(v.position - s_pos) for v in vehicles]
+            min_dist = min(distances) if distances else 20.0
+            min_dist = min(min_dist, 20.0)
+            
+            # Normalizasyon faktörü 't': 1.0 (0m'de) -> 0.0 (20m'de)
+            t = 1.0 - (min_dist / 20.0)
+            
+            # t'yi Hue değerine eşle: 0 (Kırmızı) -> 120 (Yeşil)
+            color = QColor.fromHsv(int(t * 120), 255, 255)
+            ellipse.setBrush(QBrush(color))
