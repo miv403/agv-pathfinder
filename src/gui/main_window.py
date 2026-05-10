@@ -97,6 +97,8 @@ class MainWindow(QMainWindow):
             self.simulation_view.update_road()
             for v in self.vehicles:
                 self.simulation_view.add_vehicle(v)
+            # Görev ekleme listesini tazele
+            self.control_panel.refresh_depot_list()
         else:
             print(f"Uyarı: {position}. metrede zaten bir depo var.")
 

@@ -136,7 +136,9 @@ class ControlPanel(QWidget):
         self.task_list.clear()
 
     def on_add_depot_clicked(self):
-        pos = self.depot_spinbox.value()
+        raw_pos = self.depot_spinbox.value()
+        step = self.road_network.step
+        pos = round(raw_pos / step) * step
         self.add_depot_signal.emit(pos)
 
     def on_start_clicked(self):
