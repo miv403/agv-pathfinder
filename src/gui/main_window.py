@@ -1,4 +1,4 @@
-from PyQt5.QtWidgets import QMainWindow, QSplitter, QMessageBox
+from PyQt5.QtWidgets import QMainWindow, QSplitter, QMessageBox, QTableWidget, QTableWidgetItem, QLabel
 from PyQt5.QtCore import Qt, QTimer
 
 from src.core.road_network import RoadNetwork
@@ -22,12 +22,24 @@ class MainWindow(QMainWindow):
         self.control_panel = ControlPanel(self.road_network)
 
         # 3. Layout (Splitter ile ikiye bölme)
-        splitter = QSplitter(Qt.Horizontal)
-        splitter.addWidget(self.simulation_view)
-        splitter.addWidget(self.control_panel)
-        splitter.setSizes([750, 250])
+        top_splitter = QSplitter(Qt.Horizontal)
+        top_splitter.addWidget(self.simulation_view)
+        top_splitter.addWidget(self.control_panel)
+        top_splitter.setSizes([750, 250])
+        
+        # Bilgi Paneli (Alt Kısım)
+        self.info_table = QTableWidget()
+        self.info_table.setColumnCount(4)
+        self.info_table.setHorizontalHeaderLabels(["Araç ID", "Renk", "Konum", "Görev Durumu"])
+        self.info_table.horizontalHeader().setStretchLastSection(True)
+        self.info_table.setEditTriggers(QTableWidget.NoEditTriggers)
 
-        self.setCentralWidget(splitter)
+        main_splitter = QSplitter(Qt.Vertical)
+        main_splitter.addWidget(top_splitter)
+        main_splitter.addWidget(self.info_table)
+        main_splitter.setSizes([450, 150])
+
+        self.setCentralWidget(main_splitter)
 
         # 4. Sinyalleri Bağla
         self.control_panel.add_task_signal.connect(self.handle_add_task)
@@ -45,6 +57,7 @@ class MainWindow(QMainWindow):
         print(f"Yeni Araç Eklendi: ID={vehicle_id}, Görevler={selected_depots}")
         # Aracı başlangıç noktasında oluştur
         v = Vehicle(vehicle_id=vehicle_id, start_pos=0)
+        v._real_tasks = list(selected_depots) # gerçek görevleri tablo için sakla
         for d in selected_depots:
             v.add_task(d)
             v.add_task(0)
@@ -55,6 +68,22 @@ class MainWindow(QMainWindow):
         
         # Arayüze aracı çiz
         self.simulation_view.add_vehicle(v)
+        
+        # Tabloya ekle
+        row = self.info_table.rowCount()
+        self.info_table.insertRow(row)
+        self.info_table.setItem(row, 0, QTableWidgetItem(str(vehicle_id)))
+        
+        color_item = QTableWidgetItem()
+        color_item.setBackground(v.color)
+        self.info_table.setItem(row, 1, color_item)
+        
+        self.info_table.setItem(row, 2, QTableWidgetItem("0"))
+        
+        status_label = QLabel()
+        status_label.setText("Bekliyor")
+        self.info_table.setCellWidget(row, 3, status_label)
+        v._table_row = row
 
     def handle_add_depot(self, position):
         if position not in self.road_network.depots:
@@ -83,12 +112,26 @@ class MainWindow(QMainWindow):
             
             # Rotayı daha hızlı sorgulayabilmek için sözlüğe (t -> node) dönüştür
             self.animation_routes = {}
+            self.task_completion_times = {}
             self.max_t = 0
             for vid, route in result['routes'].items():
                 t_dict = {t: node for node, t in route}
                 self.animation_routes[vid] = t_dict
                 if route:
                     self.max_t = max(self.max_t, route[-1][1])
+                    
+                # Hangi t'lerde görevlerin bittiğini (ya da oradan geçildiğini) hesapla
+                comp_times = []
+                task_idx = 0
+                v = next((veh for veh in self.vehicles if veh.vehicle_id == vid), None)
+                if v:
+                    for state in route:
+                        loc = state[0][0]
+                        t = state[1]
+                        if task_idx < len(v.tasks) and loc == v.tasks[task_idx]:
+                            comp_times.append(t)
+                            task_idx += 1
+                    self.task_completion_times[vid] = comp_times
                     
             self.simulation_time = 0.0
             
@@ -121,16 +164,19 @@ class MainWindow(QMainWindow):
                 min_t = min(route_dict.keys())
                 max_t = max(route_dict.keys())
                 
+                current_loc = 0
                 if self.simulation_time < min_t:
                     # Henüz başlamadı
                     node = route_dict[min_t]
                     loc, ntype = node
+                    current_loc = loc
                     self.simulation_view.update_vehicle_position_smooth(vehicle, loc, ntype)
                     active_vehicles = True
                 elif self.simulation_time >= max_t:
                     # Görev bitti
                     node = route_dict[max_t]
                     loc, ntype = node
+                    current_loc = loc
                     self.simulation_view.update_vehicle_position_smooth(vehicle, loc, ntype)
                     if ntype in ('pocket', 'depot'):
                         occupancy[loc] += 1
@@ -147,6 +193,7 @@ class MainWindow(QMainWindow):
                         
                         # 1D mesafe interpolasyonu
                         interpolated_loc = loc1 + (loc2 - loc1) * fraction
+                        current_loc = interpolated_loc
                         
                         # Doluluk tespiti: Yarıdan fazlaysa type2'de say, değilse type1'de
                         if fraction > 0.5:
@@ -162,9 +209,38 @@ class MainWindow(QMainWindow):
                         # Fallback (normalde CA* ardışık t'ler üretir)
                         fallback_t = t1 if t1 in route_dict else max_t
                         loc, ntype = route_dict[fallback_t]
+                        current_loc = loc
                         self.simulation_view.update_vehicle_position_smooth(vehicle, loc, ntype)
                         if ntype in ('pocket', 'depot'):
                             occupancy[loc] += 1
+                            
+                # Tabloyu güncelle
+                if hasattr(vehicle, '_table_row') and hasattr(vehicle, '_real_tasks'):
+                    row = vehicle._table_row
+                    self.info_table.setItem(row, 2, QTableWidgetItem(str(int(current_loc))))
+                    
+                    comp_times = self.task_completion_times.get(vehicle.vehicle_id, [])
+                    completed_count = sum(1 for ct in comp_times if self.simulation_time >= ct)
+                    
+                    status_html = ""
+                    for i, real_task in enumerate(vehicle._real_tasks):
+                        depot_idx = 2 * i
+                        zero_idx = 2 * i + 1
+                        
+                        if completed_count > zero_idx:
+                            color = "green"
+                        elif completed_count > depot_idx:
+                            color = "orange"
+                        elif completed_count == depot_idx:
+                            color = "inherit" # varsayılan metin rengi
+                        else:
+                            color = "red"
+                            
+                        status_html += f'<span style="color:{color}; margin-right:10px; font-weight:bold;">[{real_task}]</span> '
+                        
+                    status_label = self.info_table.cellWidget(row, 3)
+                    if status_label:
+                        status_label.setText(status_html)
                             
         # UI üzerindeki occupancy (n/slots) yazılarını güncelle
         if hasattr(self.simulation_view, 'capacity_labels'):
