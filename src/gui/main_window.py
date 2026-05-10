@@ -47,11 +47,9 @@ class MainWindow(QMainWindow):
         v = Vehicle(vehicle_id=vehicle_id, start_pos=0)
         for d in selected_depots:
             v.add_task(d)
-            
-        # Görevleri bitince merkeze (0) geri dönmesini sağla
-        if not v.tasks or v.tasks[-1] != 0:
             v.add_task(0)
-            print(f"Araç {vehicle_id} için dönüş görevi eklendi: 0")
+            
+        print(f"Araç {vehicle_id} nihai görev listesi: {v.tasks}")
         
         self.vehicles.append(v)
         
