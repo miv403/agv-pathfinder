@@ -181,8 +181,12 @@ class MainWindow(QMainWindow):
         
         self.info_table.setItem(row, 2, QTableWidgetItem(str(start_loc)))
         
+        status_html = ""
+        for real_task in v._real_tasks:
+            status_html += f'<span style="color:red; margin-right:10px; font-weight:bold;">[{real_task}]</span> '
+
         status_label = QLabel()
-        status_label.setText("Bekliyor")
+        status_label.setText(status_html)
         self.info_table.setCellWidget(row, 3, status_label)
         v._table_row = row
 
@@ -340,7 +344,7 @@ class MainWindow(QMainWindow):
                         elif completed_count == depot_idx:
                             # Devam eden (ongoing) görev: Araç yola çıktıysa yanıp sönsün
                             if self.simulation_time < min_t:
-                                color = "inherit"
+                                color = "red"
                             else:
                                 # Yaklaşık 500ms (1 adım) aralıklarla yanıp sönme
                                 is_blink = int(self.simulation_time * 2) % 2 == 0
