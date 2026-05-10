@@ -4,11 +4,11 @@ class Vehicle:
     """
     Otonom araç verilerini tutan sınıf.
     """
-    def __init__(self, vehicle_id, start_pos=0):
+    def __init__(self, vehicle_id, start_pos=0, direction=1):
         self.vehicle_id = vehicle_id
         self.position = start_pos  # 1D pozisyon (0-240 arası)
         self.tasks = []            # Ziyaret edilecek lokasyonlar sırası
-        self.direction = 1         # 1: Sağ (İleri), -1: Sol (Geri)
+        self.direction = direction # 1: Sağ (İleri), -1: Sol (Geri)
         self.status = "Bekliyor"   # "Hareket Halinde", "Bekliyor", "Tamamlandı"
         
         # Benzersiz renk ataması (Altın Oran tabanlı Hue kaydırması)

@@ -1,9 +1,9 @@
-from PyQt5.QtWidgets import QWidget, QVBoxLayout, QLabel, QCheckBox, QPushButton, QGroupBox, QSpinBox, QHBoxLayout, QComboBox, QTableWidget, QTableWidgetItem, QHeaderView
+from PyQt5.QtWidgets import QWidget, QVBoxLayout, QLabel, QPushButton, QGroupBox, QSpinBox, QHBoxLayout, QComboBox, QListWidget, QListWidgetItem
 from PyQt5.QtCore import pyqtSignal, Qt
 
 class ControlPanel(QWidget):
-    # Yeni görev/araç eklendiğinde (vehicle_id, secili_depolar) ileten sinyal
-    add_task_signal = pyqtSignal(int, list)
+    # Yeni görev/araç eklendiğinde (vehicle_id, start_loc, direction, secili_depolar) ileten sinyal
+    add_task_signal = pyqtSignal(int, int, str, list)
     
     # Yeni depo eklendiğinde (pozisyon) ileten sinyal
     add_depot_signal = pyqtSignal(int)
@@ -24,28 +24,44 @@ class ControlPanel(QWidget):
         task_group = QGroupBox("Yeni Araç Ekle")
         task_layout = QVBoxLayout()
         
-        # --- Top: Selection Area ---
-        selection_layout = QHBoxLayout()
+        # --- 1. Vehicle Properties (Single Values) ---
+        props_layout = QHBoxLayout()
+        
+        self.start_loc_spinbox = QSpinBox()
+        self.start_loc_spinbox.setRange(0, self.road_network.length)
+        self.start_loc_spinbox.setSingleStep(self.road_network.step)
+        
+        self.direction_combo = QComboBox()
+        self.direction_combo.addItems(["İleri", "Geri"])
+        
+        props_layout.addWidget(QLabel("Konum:"))
+        props_layout.addWidget(self.start_loc_spinbox)
+        props_layout.addWidget(QLabel("Yön:"))
+        props_layout.addWidget(self.direction_combo)
+        
+        task_layout.addLayout(props_layout)
+        
+        # --- 2. Task Selection (Multiple Values) ---
+        task_selection_layout = QHBoxLayout()
+        
         self.depot_combo = QComboBox()
-        self.update_depot_combo() # Fills combo with current depots
+        self.update_depot_combo() # Fills with current depots
         
         add_task_btn = QPushButton("Ekle")
-        add_task_btn.clicked.connect(self.add_task_to_table)
+        add_task_btn.clicked.connect(self.add_task_to_list)
         
-        selection_layout.addWidget(QLabel("Depo:"))
-        selection_layout.addWidget(self.depot_combo)
-        selection_layout.addWidget(add_task_btn)
-        task_layout.addLayout(selection_layout)
+        task_selection_layout.addWidget(QLabel("Depo:"))
+        task_selection_layout.addWidget(self.depot_combo)
+        task_selection_layout.addWidget(add_task_btn)
         
-        # --- Middle: The Task Grid ---
-        # Start with 1 column for now. 
-        # IN THE FUTURE: Change to 3 columns ["Depo", "Yön", "Konum"]
-        self.task_table = QTableWidget(0, 1) 
-        self.task_table.setHorizontalHeaderLabels(["Seçili Depolar"])
-        self.task_table.horizontalHeader().setSectionResizeMode(0, QHeaderView.Stretch)
-        task_layout.addWidget(self.task_table)
+        task_layout.addLayout(task_selection_layout)
         
-        # --- Bottom: Spawn Vehicle ---
+        # --- 3. The Task List ---
+        self.task_list = QListWidget()
+        task_layout.addWidget(QLabel("Seçili Görevler:"))
+        task_layout.addWidget(self.task_list)
+        
+        # --- 4. Spawn Button ---
         spawn_btn = QPushButton("Aracı Sahaya Sür")
         spawn_btn.clicked.connect(self.spawn_vehicle)
         task_layout.addWidget(spawn_btn)
@@ -83,42 +99,41 @@ class ControlPanel(QWidget):
         for depot in self.road_network.depots:
             self.depot_combo.addItem(f"Depo {depot}", depot)
 
-    def add_task_to_table(self):
+    def add_task_to_list(self):
         if self.depot_combo.count() == 0:
             return
             
         depot_id = self.depot_combo.currentData()
         
-        # Create a new row
-        row_position = self.task_table.rowCount()
-        self.task_table.insertRow(row_position)
+        item = QListWidgetItem(f"Depo {depot_id}")
+        item.setData(Qt.UserRole, depot_id)
         
-        # Column 0: Depot ID
-        item = QTableWidgetItem(f"Depo {depot_id}")
-        item.setData(Qt.UserRole, depot_id) # Store the raw int ID invisibly
-        self.task_table.setItem(row_position, 0, item)
+        self.task_list.addItem(item)
 
     def spawn_vehicle(self):
-        row_count = self.task_table.rowCount()
-        if row_count == 0:
+        if self.task_list.count() == 0:
             print("Uyarı: Araca atanmış görev yok.")
             return
             
-        selected_depots = []
+        # 1. Get Single Properties (A* uyumu için en yakın 10'luk kata yuvarla)
+        raw_loc = self.start_loc_spinbox.value()
+        step = self.road_network.step
+        start_location = round(raw_loc / step) * step
         
-        # Iterate through rows and extract the raw data
-        for row in range(row_count):
-            item = self.task_table.item(row, 0)
-            depot_id = item.data(Qt.UserRole)
-            selected_depots.append(depot_id)
+        direction = self.direction_combo.currentText()
+            
+        # 2. Get Multiple Properties
+        selected_depots = []
+        for i in range(self.task_list.count()):
+            item = self.task_list.item(i)
+            selected_depots.append(item.data(Qt.UserRole))
             
         self.vehicle_count += 1
         
-        # Emit your existing signal
-        self.add_task_signal.emit(self.vehicle_count, selected_depots)
+        self.add_task_signal.emit(self.vehicle_count, start_location, direction, selected_depots)
         
-        # Clear the table for the next vehicle setup
-        self.task_table.setRowCount(0)
+        # Temizle
+        self.task_list.clear()
 
     def on_add_depot_clicked(self):
         pos = self.depot_spinbox.value()

@@ -53,14 +53,18 @@ class MainWindow(QMainWindow):
         self.current_time_step = 0
         self.animation_routes = {}
 
-    def handle_add_task(self, vehicle_id, selected_depots):
-        print(f"Yeni Araç Eklendi: ID={vehicle_id}, Görevler={selected_depots}")
-        # Aracı başlangıç noktasında oluştur
-        v = Vehicle(vehicle_id=vehicle_id, start_pos=0)
+    def handle_add_task(self, vehicle_id, start_loc, direction_str, selected_depots):
+        print(f"Yeni Araç Eklendi: ID={vehicle_id}, Konum={start_loc}, Yön={direction_str}, Görevler={selected_depots}")
+        
+        # Yön değerini sayısal karşılığa çevir
+        direction = 1 if direction_str == "İleri" else -1
+        
+        # Aracı kullanıcının girdiği konumda oluştur
+        v = Vehicle(vehicle_id=vehicle_id, start_pos=start_loc, direction=direction)
         v._real_tasks = list(selected_depots) # gerçek görevleri tablo için sakla
         for d in selected_depots:
             v.add_task(d)
-            v.add_task(0)
+            v.add_task(start_loc)
             
         print(f"Araç {vehicle_id} nihai görev listesi: {v.tasks}")
         
@@ -78,7 +82,7 @@ class MainWindow(QMainWindow):
         color_item.setBackground(v.color)
         self.info_table.setItem(row, 1, color_item)
         
-        self.info_table.setItem(row, 2, QTableWidgetItem("0"))
+        self.info_table.setItem(row, 2, QTableWidgetItem(str(start_loc)))
         
         status_label = QLabel()
         status_label.setText("Bekliyor")
