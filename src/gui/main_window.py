@@ -1,4 +1,4 @@
-from PyQt5.QtWidgets import QMainWindow, QSplitter, QMessageBox, QTableWidget, QTableWidgetItem, QLabel, QAction, QFileDialog, QMenu
+from PyQt5.QtWidgets import QMainWindow, QSplitter, QMessageBox, QTableWidget, QTableWidgetItem, QLabel, QAction, QFileDialog, QMenu, QDialog, QCheckBox, QScrollArea, QVBoxLayout, QDialogButtonBox, QWidget
 import json
 from PyQt5.QtCore import Qt, QTimer
 
@@ -7,6 +7,40 @@ from src.core.vehicle import Vehicle
 from src.gui.simulation_view import SimulationView
 from src.gui.control_panel import ControlPanel
 from src.core.solver_thread import SolverThread
+
+class EditNodesDialog(QDialog):
+    def __init__(self, title, items, parent=None):
+        super().__init__(parent)
+        self.setWindowTitle(title)
+        self.resize(300, 400)
+        
+        layout = QVBoxLayout(self)
+        
+        # Scroll area
+        scroll = QScrollArea()
+        scroll.setWidgetResizable(True)
+        content = QWidget()
+        self.content_layout = QVBoxLayout(content)
+        
+        self.item_checkboxes = []
+        for item in sorted(items):
+            cb = QCheckBox(f"Konum: {item}")
+            cb.setChecked(True)
+            self.item_checkboxes.append((item, cb))
+            self.content_layout.addWidget(cb)
+            
+        self.content_layout.addStretch()
+        scroll.setWidget(content)
+        layout.addWidget(scroll)
+        
+        # Buttons
+        buttons = QDialogButtonBox(QDialogButtonBox.Ok | QDialogButtonBox.Cancel)
+        buttons.accepted.connect(self.accept)
+        buttons.rejected.connect(self.reject)
+        layout.addWidget(buttons)
+        
+    def get_selected_positions(self):
+        return [pos for pos, cb in self.item_checkboxes if cb.isChecked()]
 
 class MainWindow(QMainWindow):
     def __init__(self):
@@ -77,6 +111,17 @@ class MainWindow(QMainWindow):
         exit_action.triggered.connect(self.close)
         file_menu.addAction(exit_action)
 
+        # 2. Düzenle Menüsü
+        self.edit_menu = menubar.addMenu("Düzenle")
+        
+        edit_depots_action = QAction("Depoları Düzenle", self)
+        edit_depots_action.triggered.connect(self.edit_depots)
+        self.edit_menu.addAction(edit_depots_action)
+        
+        edit_pockets_action = QAction("Cepleri Düzenle", self)
+        edit_pockets_action.triggered.connect(self.edit_pockets)
+        self.edit_menu.addAction(edit_pockets_action)
+
     def save_scenario(self):
         filename, _ = QFileDialog.getSaveFileName(self, "Senaryoyu Kaydet", "./scenario.json", "JSON Dosyası (*.json)")
         if not filename:
@@ -145,6 +190,8 @@ class MainWindow(QMainWindow):
     def reset_scenario(self):
         """Mevcut araçları ve simülasyonu temizler."""
         self.animation_timer.stop()
+        if hasattr(self, 'edit_menu'):
+            self.edit_menu.setEnabled(True)
         self.vehicles = []
         self.simulation_view.clear_vehicles()
         self.info_table.setRowCount(0)
@@ -221,12 +268,58 @@ class MainWindow(QMainWindow):
         else:
             print(f"Uyarı: {position}. metrede zaten bir cep var.")
 
+    def edit_depots(self):
+        dialog = EditNodesDialog("Depoları Düzenle", self.road_network.depots, self)
+        if dialog.exec_() == QDialog.Accepted:
+            selected = dialog.get_selected_positions()
+            # Seçilmeyenleri bul (silinecekler)
+            to_remove = [d for d in self.road_network.depots if d not in selected]
+            
+            if not to_remove:
+                return
+
+            # Araçlara atanmış mı kontrol et
+            active_tasks = []
+            for v in self.vehicles:
+                active_tasks.extend(getattr(v, "_real_tasks", []))
+            
+            actually_removed = []
+            for d in to_remove:
+                if d in active_tasks:
+                    QMessageBox.warning(self, "Uyarı", f"{d}. konumundaki depo bir araca atanmış olduğu için silinemedi.")
+                else:
+                    self.road_network.depots.remove(d)
+                    actually_removed.append(d)
+            
+            if actually_removed:
+                self.simulation_view.update_road()
+                for v in self.vehicles:
+                    self.simulation_view.add_vehicle(v)
+                self.control_panel.refresh_depot_list()
+
+    def edit_pockets(self):
+        dialog = EditNodesDialog("Cepleri Düzenle", self.road_network.pockets, self)
+        if dialog.exec_() == QDialog.Accepted:
+            selected = dialog.get_selected_positions()
+            to_remove = [p for p in self.road_network.pockets if p not in selected]
+            
+            if not to_remove:
+                return
+
+            for p in to_remove:
+                self.road_network.pockets.remove(p)
+            
+            self.simulation_view.update_road()
+            for v in self.vehicles:
+                self.simulation_view.add_vehicle(v)
+
     def handle_start_simulation(self):
         if not self.vehicles:
             QMessageBox.warning(self, "Uyarı", "Başlamadan önce araç eklemelisiniz!")
             return
             
         print("Simülasyon başlıyor... Algoritma çalışıyor.")
+        self.edit_menu.setEnabled(False)
         self.solver_thread = SolverThread(self.road_network, self.vehicles)
         self.solver_thread.optimization_finished.connect(self.handle_optimization_finished)
         self.solver_thread.start()
@@ -266,6 +359,7 @@ class MainWindow(QMainWindow):
             
             self.animation_timer.start(self.timer_interval) 
         else:
+            self.edit_menu.setEnabled(True)
             QMessageBox.critical(self, "Deadlock / Hata", result['message'])
 
     def animate_step(self):
@@ -386,3 +480,4 @@ class MainWindow(QMainWindow):
         if self.simulation_time >= self.max_t:
             print(f"Animasyon tamamlandı. Toplam süre: t={math.floor(self.simulation_time)}")
             self.animation_timer.stop()
+            self.edit_menu.setEnabled(True)
