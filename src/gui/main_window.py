@@ -83,6 +83,7 @@ class MainWindow(QMainWindow):
         self.control_panel.add_depot_signal.connect(self.handle_add_depot)
         self.control_panel.add_pocket_signal.connect(self.handle_add_pocket)
         self.control_panel.start_simulation_signal.connect(self.handle_start_simulation)
+        self.control_panel.stop_simulation_signal.connect(self.handle_stop_simulation)
 
         # 5. Animasyon State
         self.solver_thread = None
@@ -323,9 +324,51 @@ class MainWindow(QMainWindow):
             
         print("Simülasyon başlıyor... Algoritma çalışıyor.")
         self.edit_menu.setEnabled(False)
+        self.control_panel.set_simulation_state(True) # Butonu durdur moduna al
         self.solver_thread = SolverThread(self.road_network, self.vehicles)
         self.solver_thread.optimization_finished.connect(self.handle_optimization_finished)
         self.solver_thread.start()
+
+    def handle_stop_simulation(self):
+        """Simülasyonu durdurur ve araçları başlangıç durumuna döndürür."""
+        print("Simülasyon durduruldu ve sıfırlandı.")
+        self.animation_timer.stop()
+        self.control_panel.set_simulation_state(False)
+        self.edit_menu.setEnabled(True)
+        
+        # 1. Animasyon verilerini temizle
+        self.animation_routes = {}
+        self.simulation_time = 0.0
+        
+        # 2. Araçları başlangıç konumlarına görsel ve mantıksal olarak döndür
+        for v in self.vehicles:
+            v.position = v.start_pos
+            self.simulation_view.update_vehicle_position_smooth(v, v.start_pos, 'path')
+        
+        # 3. Sensörleri ve doluluk yazılarını sıfırla
+        self.simulation_view.update_sensors(self.vehicles)
+        if hasattr(self.simulation_view, 'capacity_labels'):
+            for loc, label in self.simulation_view.capacity_labels.items():
+                cap = self.road_network.capacity['pocket'] if loc in self.road_network.pockets else self.road_network.capacity['depot']
+                label.setPlainText(f"0/{cap}")
+        
+        # 4. Bilgi tablosunu başlangıç haline getir
+        self.update_info_table_initial()
+
+    def update_info_table_initial(self):
+        """Tablodaki araç konumlarını ve görev durumlarını başlangıç haline getirir."""
+        for v in self.vehicles:
+            if hasattr(v, '_table_row') and hasattr(v, '_real_tasks'):
+                row = v._table_row
+                self.info_table.setItem(row, 2, QTableWidgetItem(str(v.start_pos)))
+                
+                status_html = ""
+                for real_task in v._real_tasks:
+                    status_html += f'<span style="color:red; margin-right:10px; font-weight:bold;">[{real_task}]</span> '
+                
+                status_label = self.info_table.cellWidget(row, 3)
+                if status_label:
+                    status_label.setText(status_html)
 
     def handle_optimization_finished(self, result):
         if result['status'] == 'success':
@@ -363,6 +406,7 @@ class MainWindow(QMainWindow):
             self.animation_timer.start(self.timer_interval) 
         else:
             self.edit_menu.setEnabled(True)
+            self.control_panel.set_simulation_state(False)
             QMessageBox.critical(self, "Deadlock / Hata", result['message'])
 
     def animate_step(self):
@@ -487,3 +531,4 @@ class MainWindow(QMainWindow):
             print(f"Animasyon tamamlandı. Toplam süre: t={math.floor(self.simulation_time)}")
             self.animation_timer.stop()
             self.edit_menu.setEnabled(True)
+            self.control_panel.set_simulation_state(False)

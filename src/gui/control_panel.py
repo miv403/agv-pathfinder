@@ -11,13 +11,15 @@ class ControlPanel(QWidget):
     # Yeni cep eklendiğinde (pozisyon) ileten sinyal
     add_pocket_signal = pyqtSignal(int)
     
-    # Simülasyonu başlatma sinyali
+    # Simülasyonu başlatma/durdurma sinyalleri
     start_simulation_signal = pyqtSignal()
+    stop_simulation_signal = pyqtSignal()
 
     def __init__(self, road_network):
         super().__init__()
         self.road_network = road_network
         self.vehicle_count = 0
+        self.is_sim_running = False
         self.init_ui()
 
     def init_ui(self):
@@ -104,11 +106,11 @@ class ControlPanel(QWidget):
         pocket_group.setLayout(pocket_layout)
         layout.addWidget(pocket_group)
 
-        # 4. Başlat Butonu
-        start_btn = QPushButton("Simülasyonu Başlat")
-        start_btn.setStyleSheet("background-color: #4CAF50; color: white; font-weight: bold; padding: 10px;")
-        start_btn.clicked.connect(self.on_start_clicked)
-        layout.addWidget(start_btn)
+        # 4. Başlat/Durdur Butonu
+        self.start_btn = QPushButton("Simülasyonu Başlat")
+        self.start_btn.setStyleSheet("background-color: #4CAF50; color: white; font-weight: bold; padding: 10px;")
+        self.start_btn.clicked.connect(self.on_start_clicked)
+        layout.addWidget(self.start_btn)
 
         layout.addStretch()
         self.setLayout(layout)
@@ -168,7 +170,20 @@ class ControlPanel(QWidget):
         self.add_pocket_signal.emit(pos)
 
     def on_start_clicked(self):
-        self.start_simulation_signal.emit()
+        if self.is_sim_running:
+            self.stop_simulation_signal.emit()
+        else:
+            self.start_simulation_signal.emit()
+
+    def set_simulation_state(self, running):
+        """Butonun görünümünü simülasyon durumuna göre değiştirir."""
+        self.is_sim_running = running
+        if running:
+            self.start_btn.setText("Simülasyonu Durdur (Sıfırla)")
+            self.start_btn.setStyleSheet("background-color: #f44336; color: white; font-weight: bold; padding: 10px;")
+        else:
+            self.start_btn.setText("Simülasyonu Başlat")
+            self.start_btn.setStyleSheet("background-color: #4CAF50; color: white; font-weight: bold; padding: 10px;")
 
     def refresh_depot_list(self):
         """Yeni depo eklendiğinde combo listesini günceller."""
