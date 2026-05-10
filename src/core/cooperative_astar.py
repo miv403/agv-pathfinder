@@ -124,7 +124,7 @@ class CooperativeAStar:
                     
         return None  # Çözüm bulunamadı
 
-    def solve(self, vehicles):
+    def solve(self, vehicles, delay_step=5):
         """
         Tüm sistemi planlar ve çözer.
         Stage 1: Önceliklendirme
@@ -151,10 +151,10 @@ class CooperativeAStar:
             # Start at t_initial
             # We implement Deadlock Resolver: if A* fails, increment t_initial and try again
             t_initial = 0
-            max_delay_attempts = 200 # t_initial = 1000'e kadar (200 * 5) dener
+            max_delay_attempts = 200 # t_initial = 1000'e kadar (200 * delay_step) dener
             success = False
             
-            while t_initial < max_delay_attempts * 5 and not success:
+            while t_initial < max_delay_attempts * delay_step and not success:
                 vehicle_route = []
                 current_t = t_initial
                 # Basitlik için başlangıç düğümü 'path' olarak varsayılır
@@ -206,7 +206,7 @@ class CooperativeAStar:
                             "status": "error",
                             "message": f"Hata: Girilen başlangıç senaryosu güvenlik veya kapasite kısıtlarını ihlal ediyor. Bu senaryoda kilitlenme durumu kaçınılmazdır.\n\nSenaryo Analizi: Bu başlangıç durumu kilitlenmeye yol açmaktadır. {vehicle.vehicle_id} numaralı araç için güvenli rota bulanamadı."
                         }
-                    t_initial += 5  # "Ex: t = t + 5"
+                    t_initial += delay_step  # "Ex: t = t + delay_step"
                     
             if not success:
                 return {

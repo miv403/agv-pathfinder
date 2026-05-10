@@ -1,4 +1,4 @@
-from PyQt5.QtWidgets import QMainWindow, QSplitter, QMessageBox, QTableWidget, QTableWidgetItem, QLabel, QAction, QFileDialog, QMenu, QDialog, QCheckBox, QScrollArea, QVBoxLayout, QDialogButtonBox, QWidget, QDoubleSpinBox
+from PyQt5.QtWidgets import QMainWindow, QSplitter, QMessageBox, QTableWidget, QTableWidgetItem, QLabel, QAction, QFileDialog, QMenu, QDialog, QCheckBox, QScrollArea, QVBoxLayout, QDialogButtonBox, QWidget, QDoubleSpinBox, QTextEdit
 import json
 from PyQt5.QtCore import Qt, QTimer
 
@@ -92,24 +92,38 @@ class MainWindow(QMainWindow):
         self.control_panel = ControlPanel(self.road_network)
 
         # 3. Layout (Splitter ile ikiye bölme)
-        top_splitter = QSplitter(Qt.Horizontal)
-        top_splitter.addWidget(self.simulation_view)
-        top_splitter.addWidget(self.control_panel)
-        top_splitter.setSizes([700, 320])
-        
-        # Bilgi Paneli (Alt Kısım)
+        # Sol taraf: Simülasyon Görünümü + Bilgi Tablosu
         self.info_table = QTableWidget()
         self.info_table.setColumnCount(4)
         self.info_table.setHorizontalHeaderLabels(["Araç ID", "Renk", "Konum", "Görev Durumu"])
         self.info_table.horizontalHeader().setStretchLastSection(True)
         self.info_table.setEditTriggers(QTableWidget.NoEditTriggers)
 
-        main_splitter = QSplitter(Qt.Vertical)
-        main_splitter.addWidget(top_splitter)
-        main_splitter.addWidget(self.info_table)
-        main_splitter.setSizes([450, 150])
+        left_splitter = QSplitter(Qt.Vertical)
+        left_splitter.addWidget(self.simulation_view)
+        left_splitter.addWidget(self.info_table)
+        left_splitter.setSizes([500, 200])
 
-        self.setCentralWidget(main_splitter)
+        # Sağ taraf: Kontrol Paneli + Sonuç Logu
+        right_container = QWidget()
+        right_layout = QVBoxLayout(right_container)
+        right_layout.setContentsMargins(5, 5, 5, 5)
+        right_layout.addWidget(self.control_panel)
+        
+        self.result_log = QTextEdit()
+        self.result_log.setReadOnly(True)
+        self.result_log.setPlaceholderText("Hesaplama sonuçları burada görünecek...")
+        self.result_log.setStyleSheet("background-color: #f8f9fa; font-family: 'Consolas', 'Monaco', monospace; font-size: 11px; border: 1px solid #ced4da;")
+        right_layout.addWidget(QLabel("<b>Hesaplama Logu:</b>"))
+        right_layout.addWidget(self.result_log)
+
+        # Ana Yatay Splitter
+        main_h_splitter = QSplitter(Qt.Horizontal)
+        main_h_splitter.addWidget(left_splitter)
+        main_h_splitter.addWidget(right_container)
+        main_h_splitter.setSizes([800, 300])
+
+        self.setCentralWidget(main_h_splitter)
 
         # 4. Sinyalleri Bağla
         self.control_panel.add_task_signal.connect(self.handle_add_task)
@@ -127,6 +141,7 @@ class MainWindow(QMainWindow):
         self.animation_speed_factor = 1.0
         self.timer_interval = 33
         self.ms_per_logical_step = 500.0
+        self.delay_step = 5 # A* scheduling delay parameter
 
     def init_menu_bar(self):
         menubar = self.menuBar()
@@ -182,6 +197,10 @@ class MainWindow(QMainWindow):
         speed_action = QAction("Hız Ayarları", self)
         speed_action.triggered.connect(self.change_speed)
         self.sim_menu.addAction(speed_action)
+
+        delay_action = QAction("A* Gecikme Ayarı (initial_t += X)", self)
+        delay_action.triggered.connect(self.change_delay)
+        self.sim_menu.addAction(delay_action)
 
     def save_scenario(self):
         filename, _ = QFileDialog.getSaveFileName(self, "Senaryoyu Kaydet", "./scenario.json", "JSON Dosyası (*.json)")
@@ -296,6 +315,14 @@ class MainWindow(QMainWindow):
         if dialog.exec_() == QDialog.Accepted:
             self.animation_speed_factor = dialog.get_speed()
             print(f"Simülasyon hızı güncellendi: {self.animation_speed_factor}x")
+
+    def change_delay(self):
+        """A* planlama gecikme parametresini değiştirir."""
+        from PyQt5.QtWidgets import QInputDialog
+        val, ok = QInputDialog.getInt(self, "A* Parametresi", "Planlama Gecikme Adımı (initial_t += X):", self.delay_step, 1, 50, 1)
+        if ok:
+            self.delay_step = val
+            print(f"A* gecikme parametresi güncellendi: {self.delay_step}")
 
     def handle_add_task(self, vehicle_id, start_loc, direction_str, selected_depots, is_vip=False):
         # Shortest Job First (SJF) - Görevleri toplam maliyete göre sırala
@@ -426,7 +453,7 @@ class MainWindow(QMainWindow):
         print("Simülasyon başlıyor... Algoritma çalışıyor.")
         self.edit_menu.setEnabled(False)
         self.control_panel.set_simulation_state(True) # Butonu durdur moduna al
-        self.solver_thread = SolverThread(self.road_network, self.vehicles)
+        self.solver_thread = SolverThread(self.road_network, self.vehicles, delay_step=self.delay_step)
         self.solver_thread.optimization_finished.connect(self.handle_optimization_finished)
         self.solver_thread.start()
 
@@ -475,6 +502,12 @@ class MainWindow(QMainWindow):
         if result['status'] == 'success':
             print("Optimizasyon başarılı! Animasyon başlıyor...")
             
+            # Sonuçları Log Paneline Yaz
+            self.result_log.clear()
+            self.result_log.append("<b>--- Optimizasyon Özeti ---</b>")
+            self.result_log.append(f"Hesaplama Süresi: {result['elapsed_ms']:.2f} ms")
+            self.result_log.append(f"Gecikme Parametresi: {result['delay_step']}")
+            
             # Rotayı daha hızlı sorgulayabilmek için sözlüğe (t -> node) dönüştür
             self.animation_routes = {}
             self.task_completion_times = {}
@@ -498,6 +531,10 @@ class MainWindow(QMainWindow):
                             task_idx += 1
                     self.task_completion_times[vid] = comp_times
                     
+            # Maksimum t değerini yazdır
+            self.result_log.append(f"Toplam Zaman (t_max): {self.max_t}")
+            self.result_log.append("-----------------------------")
+
             self.simulation_time = 0.0
             
             # FPS Ayarları: 30 FPS = ~33ms per frame
