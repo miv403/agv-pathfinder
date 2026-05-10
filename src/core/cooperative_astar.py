@@ -107,7 +107,14 @@ class CooperativeAStar:
                 if not self.is_valid_state(next_node, next_t):
                     continue
                     
-                tentative_g = g_score[(current_node, current_t)] + 1
+                # --- GÜNCELLEME: Maliyet Fonksiyonu (Yo-Yo Etkisini Kırmak İçin) ---
+                if current_node == next_node:
+                    step_cost = 0.9  # Beklemek matematiksel olarak daha ucuz
+                else:
+                    step_cost = 1.0  # Hareket etmek normal maliyetli
+                    
+                tentative_g = g_score[(current_node, current_t)] + step_cost
+                # -------------------------------------------------------------------
                 
                 if tentative_g < g_score.get((next_node, next_t), float('inf')):
                     came_from[(next_node, next_t)] = (current_node, current_t)
