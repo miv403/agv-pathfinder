@@ -116,6 +116,13 @@ class MainWindow(QMainWindow):
         # 2. Düzenle Menüsü
         self.edit_menu = menubar.addMenu("Düzenle")
         
+        undo_action = QAction("Geri Al", self)
+        undo_action.setShortcut("Ctrl+Z")
+        undo_action.triggered.connect(self.undo_last_vehicle)
+        self.edit_menu.addAction(undo_action)
+        
+        self.edit_menu.addSeparator()
+
         edit_depots_action = QAction("Depoları Düzenle", self)
         edit_depots_action.triggered.connect(self.edit_depots)
         self.edit_menu.addAction(edit_depots_action)
@@ -123,6 +130,16 @@ class MainWindow(QMainWindow):
         edit_pockets_action = QAction("Cepleri Düzenle", self)
         edit_pockets_action.triggered.connect(self.edit_pockets)
         self.edit_menu.addAction(edit_pockets_action)
+
+        self.edit_menu.addSeparator()
+
+        reset_tasks_action = QAction("Görevleri ve Araçları Sıfırla", self)
+        reset_tasks_action.triggered.connect(self.reset_tasks_and_vehicles)
+        self.edit_menu.addAction(reset_tasks_action)
+
+        reset_all_action = QAction("Tümünü Sıfırla", self)
+        reset_all_action.triggered.connect(self.reset_all)
+        self.edit_menu.addAction(reset_all_action)
 
     def save_scenario(self):
         filename, _ = QFileDialog.getSaveFileName(self, "Senaryoyu Kaydet", "./scenario.json", "JSON Dosyası (*.json)")
@@ -162,7 +179,7 @@ class MainWindow(QMainWindow):
                 data = json.load(f)
             
             # Mevcut durumu temizle
-            self.reset_scenario()
+            self.reset_all()
 
             # Depoları yükle
             for depot_pos in data.get("depots", []):
@@ -191,8 +208,8 @@ class MainWindow(QMainWindow):
         except Exception as e:
             QMessageBox.critical(self, "Hata", f"Senaryo yüklenirken hata oluştu: {str(e)}")
 
-    def reset_scenario(self):
-        """Mevcut araçları ve simülasyonu temizler."""
+    def reset_tasks_and_vehicles(self):
+        """Sadece araçları ve görevleri temizler, depoları ve cepleri korur."""
         self.animation_timer.stop()
         if hasattr(self, 'edit_menu'):
             self.edit_menu.setEnabled(True)
@@ -201,12 +218,35 @@ class MainWindow(QMainWindow):
         self.info_table.setRowCount(0)
         self.animation_routes = {}
         self.current_time_step = 0
-        
-        # Depoları ve cepleri sıfırla
+        self.control_panel.vehicle_count = 0
+        self.control_panel.set_simulation_state(False)
+        self.simulation_view.update_sensors([])
+
+    def reset_all(self):
+        """Depolar, cepler, araçlar dahil her şeyi sıfırla."""
+        self.reset_tasks_and_vehicles()
         self.road_network.depots = []
         self.road_network.pockets = []
         self.simulation_view.update_road()
         self.control_panel.refresh_depot_list()
+
+    def undo_last_vehicle(self):
+        """Son eklenen aracı listeden ve ekrandan kaldırır."""
+        if not self.vehicles:
+            return
+            
+        last_vehicle = self.vehicles.pop()
+        self.simulation_view.remove_vehicle(last_vehicle.vehicle_id)
+        
+        # Tablodan kaldır
+        for row in range(self.info_table.rowCount()):
+            item = self.info_table.item(row, 0)
+            if item and item.text().startswith(str(last_vehicle.vehicle_id)):
+                self.info_table.removeRow(row)
+                break
+        
+        self.control_panel.vehicle_count = max(0, self.control_panel.vehicle_count - 1)
+        self.simulation_view.update_sensors(self.vehicles)
 
     def handle_add_task(self, vehicle_id, start_loc, direction_str, selected_depots, is_vip=False):
         # Shortest Job First (SJF) - Görevleri toplam maliyete göre sırala

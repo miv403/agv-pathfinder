@@ -139,6 +139,14 @@ class SimulationView(QGraphicsView):
         self.vehicle_items = {}
         self.vip_vehicles = []
 
+    def remove_vehicle(self, vehicle_id):
+        """Belirli bir aracı ekrandan siler."""
+        if vehicle_id in self.vehicle_items:
+            item = self.vehicle_items.pop(vehicle_id)
+            self.scene.removeItem(item)
+            # VIP listesinden de çıkar
+            self.vip_vehicles = [v for v in self.vip_vehicles if v.vehicle_id != vehicle_id]
+
     def get_type_y_offset(self, ntype):
         """Düğüm tipine göre görsel Y ekseni kaymasını (offset) döner."""
         if ntype == 'pocket':
