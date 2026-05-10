@@ -14,7 +14,8 @@ class RoadNetwork:
         
         self.capacity = {
             'pocket': 1,
-            'depot': 3
+            'depot': 3,
+            'start': 10000
         }
         
         self.distance_matrix = {}
@@ -39,6 +40,8 @@ class RoadNetwork:
             return loc in self.pockets
         elif ntype == 'depot':
             return loc in self.depots
+        elif ntype == 'start':
+            return loc == 0
         return False
 
     def get_neighbors(self, node):
@@ -59,8 +62,10 @@ class RoadNetwork:
                 neighbors.append((loc, 'pocket'))
             if loc in self.depots:
                 neighbors.append((loc, 'depot'))
+            if loc == 0:
+                neighbors.append((loc, 'start'))
                 
-        elif ntype in ('pocket', 'depot'):
+        elif ntype in ('pocket', 'depot', 'start'):
             # Cepten veya depodan ana yola çıkış (aynı lokasyona)
             neighbors.append((loc, 'path'))
             # Kendi içinde bekleyebilir

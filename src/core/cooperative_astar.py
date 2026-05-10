@@ -127,12 +127,13 @@ class CooperativeAStar:
         
 
         # Stage 1: Sort vehicles
-        # VIP: True > False (Yani True olanlar önce gelir)
-        # Furthest: Büyükten küçüğe
         sorted_vehicles = sorted(
             vehicles,
-            key=lambda v: (v.is_vip, v.furthest_target_distance),
-            reverse=True
+            key=lambda v: (
+                not v.is_vip,                   # VIP olanlar önce (False < True mantığı için not kullanılır)
+                abs(v.current_target - v.start_pos), # Hedefe kalan mesafe (Küçükten Büyüğe) -> Öndekiler önce çıkar
+                -v.total_mission_distance       # Toplam görev yükü (Büyükten Küçüğe) -> Eşitlik durumunda çok işi olan önce çıksın
+            )
         )
 
         all_routes = {}  # vehicle_id -> list of (node, t)
@@ -150,14 +151,19 @@ class CooperativeAStar:
                 vehicle_route = []
                 current_t = t_initial
                 # Basitlik için başlangıç düğümü 'path' olarak varsayılır
-                current_node = (vehicle.position, 'path') 
+                if vehicle.position == 0:
+                    current_node = (0, 'start')
+                else:
+                    current_node = (vehicle.position, 'path') 
                 
                 # Hedefleri sırayla gez (Segment bazlı A*)
                 segment_success = True
                 
                 for task_loc in vehicle.tasks:
                     # Görev lokasyonunu 'depot' veya 'pocket' varsayıyoruz, değilse 'path'
-                    if task_loc in self.rn.depots:
+                    if task_loc == 0:
+                        target_node = (0, 'start')
+                    elif task_loc in self.rn.depots:
                         target_node = (task_loc, 'depot')
                     elif task_loc in self.rn.pockets:
                         target_node = (task_loc, 'pocket')
