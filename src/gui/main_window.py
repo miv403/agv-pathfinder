@@ -1,4 +1,5 @@
-from PyQt5.QtWidgets import QMainWindow, QSplitter, QMessageBox, QTableWidget, QTableWidgetItem, QLabel
+from PyQt5.QtWidgets import QMainWindow, QSplitter, QMessageBox, QTableWidget, QTableWidgetItem, QLabel, QAction, QFileDialog, QMenu
+import json
 from PyQt5.QtCore import Qt, QTimer
 
 from src.core.road_network import RoadNetwork
@@ -12,6 +13,8 @@ class MainWindow(QMainWindow):
         super().__init__()
         self.setWindowTitle("Otonom Araç Optimizasyonu (Cooperative A*)")
         self.resize(1000, 600)
+        
+        self.init_menu_bar()
 
         # 1. Veri Modelini Oluştur
         self.road_network = RoadNetwork(length=240, step=10)
@@ -52,6 +55,100 @@ class MainWindow(QMainWindow):
         self.animation_timer.timeout.connect(self.animate_step)
         self.current_time_step = 0
         self.animation_routes = {}
+
+    def init_menu_bar(self):
+        menubar = self.menuBar()
+        file_menu = menubar.addMenu("Dosya")
+
+        save_action = QAction("Senaryoyu Kaydet", self)
+        save_action.setShortcut("Ctrl+S")
+        save_action.triggered.connect(self.save_scenario)
+        file_menu.addAction(save_action)
+
+        load_action = QAction("Senaryoyu Yükle", self)
+        load_action.setShortcut("Ctrl+L")
+        load_action.triggered.connect(self.load_scenario)
+        file_menu.addAction(load_action)
+
+        file_menu.addSeparator()
+        
+        exit_action = QAction("Çıkış", self)
+        exit_action.triggered.connect(self.close)
+        file_menu.addAction(exit_action)
+
+    def save_scenario(self):
+        filename, _ = QFileDialog.getSaveFileName(self, "Senaryoyu Kaydet", "", "JSON Dosyası (*.json)")
+        if not filename:
+            return
+
+        scenario_data = {
+            "depots": self.road_network.depots,
+            "vehicles": []
+        }
+
+        for v in self.vehicles:
+            vehicle_data = {
+                "id": v.vehicle_id,
+                "start_pos": v.start_pos,
+                "direction": "İleri" if v.direction == 1 else "Geri",
+                "tasks": getattr(v, "_real_tasks", [])
+            }
+            scenario_data["vehicles"].append(vehicle_data)
+
+        try:
+            with open(filename, 'w', encoding='utf-8') as f:
+                json.dump(scenario_data, f, indent=4, ensure_ascii=False)
+            QMessageBox.information(self, "Başarılı", "Senaryo başarıyla kaydedildi.")
+        except Exception as e:
+            QMessageBox.critical(self, "Hata", f"Senaryo kaydedilirken hata oluştu: {str(e)}")
+
+    def load_scenario(self):
+        filename, _ = QFileDialog.getOpenFileName(self, "Senaryoyu Yükle", "", "JSON Dosyası (*.json)")
+        if not filename:
+            return
+
+        try:
+            with open(filename, 'r', encoding='utf-8') as f:
+                data = json.load(f)
+            
+            # Mevcut durumu temizle
+            self.reset_scenario()
+
+            # Depoları yükle
+            for depot_pos in data.get("depots", []):
+                self.handle_add_depot(depot_pos)
+
+            # Araçları yükle
+            for v_data in data.get("vehicles", []):
+                self.handle_add_task(
+                    v_data["id"],
+                    v_data["start_pos"],
+                    v_data["direction"],
+                    v_data["tasks"]
+                )
+            
+            # Araç sayacını güncelle ki çakışmasın
+            if self.vehicles:
+                max_id = max(v.vehicle_id for v in self.vehicles)
+                self.control_panel.vehicle_count = max_id
+
+            QMessageBox.information(self, "Başarılı", "Senaryo başarıyla yüklendi.")
+        except Exception as e:
+            QMessageBox.critical(self, "Hata", f"Senaryo yüklenirken hata oluştu: {str(e)}")
+
+    def reset_scenario(self):
+        """Mevcut araçları ve simülasyonu temizler."""
+        self.animation_timer.stop()
+        self.vehicles = []
+        self.simulation_view.clear_vehicles()
+        self.info_table.setRowCount(0)
+        self.animation_routes = {}
+        self.current_time_step = 0
+        
+        # Depoları sıfırla (Sadece 0 kalsın)
+        self.road_network.depots = [0]
+        self.simulation_view.update_road()
+        self.control_panel.refresh_depot_list()
 
     def handle_add_task(self, vehicle_id, start_loc, direction_str, selected_depots):
         print(f"Yeni Araç Eklendi: ID={vehicle_id}, Konum={start_loc}, Yön={direction_str}, Görevler={selected_depots}")

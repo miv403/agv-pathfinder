@@ -121,6 +121,12 @@ class SimulationView(QGraphicsView):
         item = self.scene.addEllipse(pos.x() - 8, pos.y() - 8, 16, 16, QPen(Qt.black), QBrush(QColor(vehicle.color)))
         self.vehicle_items[vehicle.vehicle_id] = item
 
+    def clear_vehicles(self):
+        """Tüm araç görsel nesnelerini siler."""
+        for item in self.vehicle_items.values():
+            self.scene.removeItem(item)
+        self.vehicle_items = {}
+
     def get_type_y_offset(self, ntype):
         """Düğüm tipine göre görsel Y ekseni kaymasını (offset) döner."""
         if ntype == 'pocket':
