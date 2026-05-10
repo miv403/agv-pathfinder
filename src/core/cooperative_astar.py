@@ -188,6 +188,11 @@ class CooperativeAStar:
                     success = True
                 else:
                     # Deadlock resolver: t_initial'ı artır ve tekrar dene
+                    if vehicle.position != 0:
+                        return {
+                            "status": "error",
+                            "message": f"Hata: Girilen başlangıç senaryosu güvenlik veya kapasite kısıtlarını ihlal ediyor. Bu senaryoda kilitlenme durumu kaçınılmazdır.\n\nSenaryo Analizi: Bu başlangıç durumu kilitlenmeye yol açmaktadır. {vehicle.vehicle_id} numaralı araç için güvenli rota bulanamadı."
+                        }
                     t_initial += 5  # "Ex: t = t + 5"
                     
             if not success:
