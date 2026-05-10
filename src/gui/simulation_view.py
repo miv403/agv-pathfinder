@@ -78,11 +78,11 @@ class SimulationView(QGraphicsView):
         self.sensor_items = {}
         for s in self.road_network.sensors:
             pos = self.get_2d_position(s)
-            y_offset = 25  # Yolun altına iz düşüm
+            y_offset = 0  # Yolun altına iz düşüm
             ellipse = self.scene.addEllipse(pos.x() - 5, pos.y() + y_offset - 5, 10, 10, QPen(Qt.black), QBrush(Qt.red))
             self.sensor_items[s] = ellipse
             text = self.scene.addText(f"S{s}")
-            text.setPos(pos.x() - 10, pos.y() + y_offset + 5)
+            text.setPos(pos.x() - 20, pos.y() + y_offset + 10)
 
         self.capacity_labels = {}
 
@@ -92,12 +92,12 @@ class SimulationView(QGraphicsView):
             y_offset = -30  # Yolun üstüne iz düşüm
             self.scene.addRect(pos.x() - 10, pos.y() + y_offset - 10, 20, 20, QPen(Qt.black), QBrush(Qt.green))
             text = self.scene.addText(f"C{p}")
-            text.setPos(pos.x() - 10, pos.y() + y_offset - 35)
+            text.setPos(pos.x() - 15, pos.y() + y_offset - 35)
             
             cap = self.road_network.capacity.get('pocket', 1)
             cap_text = self.scene.addText(f"0/{cap}")
             cap_text.setDefaultTextColor(QColor("darkgreen"))
-            cap_text.setPos(pos.x() - 10, pos.y() + y_offset + 10)
+            cap_text.setPos(pos.x() - 40, pos.y() + y_offset - 14)
             self.capacity_labels[p] = cap_text
 
         # 4. Depoları Çiz (Kırmızı Kareler, Yolun Üstünde)
@@ -106,12 +106,12 @@ class SimulationView(QGraphicsView):
             y_offset = -32  # Yolun üstüne iz düşüm
             self.scene.addRect(pos.x() - 12, pos.y() + y_offset - 12, 24, 24, QPen(Qt.black), QBrush(Qt.red))
             text = self.scene.addText(f"D{d}")
-            text.setPos(pos.x() - 10, pos.y() + y_offset - 35)
+            text.setPos(pos.x() - 18, pos.y() + y_offset - 35)
             
             cap = self.road_network.capacity.get('depot', 3)
             cap_text = self.scene.addText(f"0/{cap}")
             cap_text.setDefaultTextColor(QColor("darkred"))
-            cap_text.setPos(pos.x() - 10, pos.y() + y_offset + 12)
+            cap_text.setPos(pos.x() - 45, pos.y() + y_offset - 14)
             self.capacity_labels[d] = cap_text
             
     def update_road(self):

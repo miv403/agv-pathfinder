@@ -118,7 +118,7 @@ class ControlPanel(QWidget):
 
         layout.addStretch()
         self.setLayout(layout)
-        self.setFixedWidth(250)
+        self.setFixedWidth(320)
 
     def update_depot_combo(self):
         self.depot_combo.clear()

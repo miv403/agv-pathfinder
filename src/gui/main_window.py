@@ -46,7 +46,8 @@ class MainWindow(QMainWindow):
     def __init__(self):
         super().__init__()
         self.setWindowTitle("Otonom Araç Optimizasyonu (Cooperative A*)")
-        self.resize(1000, 600)
+        # self.resize(1000, 600)
+        self.resize(1100, 700)
         
         self.init_menu_bar()
 
@@ -62,7 +63,7 @@ class MainWindow(QMainWindow):
         top_splitter = QSplitter(Qt.Horizontal)
         top_splitter.addWidget(self.simulation_view)
         top_splitter.addWidget(self.control_panel)
-        top_splitter.setSizes([750, 250])
+        top_splitter.setSizes([700, 320])
         
         # Bilgi Paneli (Alt Kısım)
         self.info_table = QTableWidget()
