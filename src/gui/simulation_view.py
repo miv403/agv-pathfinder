@@ -155,21 +155,94 @@ class SimulationView(QGraphicsView):
             return -32
         return 0
 
-    def update_vehicle_position_smooth(self, vehicle, loc, type1, type2=None, fraction=0.0):
-        """Aracın ekrandaki konumunu yumuşak (interpolated) olarak günceller."""
-        # Mantıksal pozisyonu da güncelle ki sensörler okuyabilsin
-        vehicle.position = loc
+    def update_vehicle_position_smooth(self, vehicle, loc1, loc2, type1, type2=None, fraction=0.0):
+        """Aracın ekrandaki konumunu yumuşak (interpolated) olarak günceller.
+           Köşeleri dönerken zaman hırsızlığı (phase-based interpolation) yaparak ışınlanmayı (teleport) önler.
+        """
+        if type2 is None:
+            type2 = type1
+            
+        # Mantıksal pozisyonu güncelle ki sensörler okuyabilsin (ve UI'daki tablo için)
+        interpolated_loc = loc1 + (loc2 - loc1) * fraction
+        vehicle.position = interpolated_loc
         
         if vehicle.vehicle_id in self.vehicle_items:
-            # X/Y koordinatını bul (get_2d_position ondalıklı değerleri mükemmel eşler)
-            pos = self.get_2d_position(loc)
-            
             offset1 = self.get_type_y_offset(type1)
-            offset2 = self.get_type_y_offset(type2) if type2 else offset1
-            
-            # Eğer cebe/depoya girip çıkıyorsa Y offset'i de yumuşakça anime et
+            offset2 = self.get_type_y_offset(type2)
             y_offset = offset1 + (offset2 - offset1) * fraction
-                
+            
+            # Zıplama sınırları (Segment boyu = 80)
+            seg_len = self.road_network.length / 3.0
+            boundary_1 = seg_len         # 80.0
+            boundary_2 = 2 * seg_len     # 160.0
+            
+            is_teleport_step = False
+            
+            # --- PHASE-BASED INTERPOLATION LOGIC ---
+            # 80 -> >80 (İleri doğru 1. köşeyi dönüş)
+            if loc1 <= boundary_1 and loc2 > boundary_1:
+                is_teleport_step = True
+                if fraction < 0.5:
+                    # Phase 1: Dikey iniş
+                    pos_start = self.get_2d_position(boundary_1)
+                    pos_end = self.get_2d_position(boundary_1 + 0.001)
+                    phase_frac = fraction * 2.0
+                    pos = QPointF(pos_start.x(), pos_start.y() + (pos_end.y() - pos_start.y()) * phase_frac)
+                else:
+                    # Phase 2: Yatay devam
+                    pos_start = self.get_2d_position(boundary_1 + 0.001)
+                    pos_end = self.get_2d_position(loc2)
+                    phase_frac = (fraction - 0.5) * 2.0
+                    pos = QPointF(pos_start.x() + (pos_end.x() - pos_start.x()) * phase_frac, pos_start.y())
+            
+            # >80 -> 80 (Geri doğru 1. köşeyi dönüş)
+            elif loc1 > boundary_1 and loc2 <= boundary_1:
+                is_teleport_step = True
+                if fraction < 0.5:
+                    # Phase 1: Yatay devam (geri)
+                    pos_start = self.get_2d_position(loc1)
+                    pos_end = self.get_2d_position(boundary_1 + 0.001)
+                    phase_frac = fraction * 2.0
+                    pos = QPointF(pos_start.x() + (pos_end.x() - pos_start.x()) * phase_frac, pos_start.y())
+                else:
+                    # Phase 2: Dikey çıkış
+                    pos_start = self.get_2d_position(boundary_1 + 0.001)
+                    pos_end = self.get_2d_position(boundary_1)
+                    phase_frac = (fraction - 0.5) * 2.0
+                    pos = QPointF(pos_start.x(), pos_start.y() + (pos_end.y() - pos_start.y()) * phase_frac)
+                    
+            # 160 -> >160 (İleri doğru 2. köşeyi dönüş)
+            elif loc1 <= boundary_2 and loc2 > boundary_2:
+                is_teleport_step = True
+                if fraction < 0.5:
+                    pos_start = self.get_2d_position(boundary_2)
+                    pos_end = self.get_2d_position(boundary_2 + 0.001)
+                    phase_frac = fraction * 2.0
+                    pos = QPointF(pos_start.x(), pos_start.y() + (pos_end.y() - pos_start.y()) * phase_frac)
+                else:
+                    pos_start = self.get_2d_position(boundary_2 + 0.001)
+                    pos_end = self.get_2d_position(loc2)
+                    phase_frac = (fraction - 0.5) * 2.0
+                    pos = QPointF(pos_start.x() + (pos_end.x() - pos_start.x()) * phase_frac, pos_start.y())
+                    
+            # >160 -> 160 (Geri doğru 2. köşeyi dönüş)
+            elif loc1 > boundary_2 and loc2 <= boundary_2:
+                is_teleport_step = True
+                if fraction < 0.5:
+                    pos_start = self.get_2d_position(loc1)
+                    pos_end = self.get_2d_position(boundary_2 + 0.001)
+                    phase_frac = fraction * 2.0
+                    pos = QPointF(pos_start.x() + (pos_end.x() - pos_start.x()) * phase_frac, pos_start.y())
+                else:
+                    pos_start = self.get_2d_position(boundary_2 + 0.001)
+                    pos_end = self.get_2d_position(boundary_2)
+                    phase_frac = (fraction - 0.5) * 2.0
+                    pos = QPointF(pos_start.x(), pos_start.y() + (pos_end.y() - pos_start.y()) * phase_frac)
+
+            # Normal durum (Zıplama yok)
+            if not is_teleport_step:
+                pos = self.get_2d_position(interpolated_loc)
+
             item = self.vehicle_items[vehicle.vehicle_id]
             # setRect, posizyonu güncellemek için (ellipse x,y'si bounding box)
             item.setRect(pos.x() - 8, pos.y() + y_offset - 8, 16, 16)

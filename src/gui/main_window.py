@@ -471,7 +471,7 @@ class MainWindow(QMainWindow):
         # 2. Araçları başlangıç konumlarına görsel ve mantıksal olarak döndür
         for v in self.vehicles:
             v.position = v.start_pos
-            self.simulation_view.update_vehicle_position_smooth(v, v.start_pos, 'path')
+            self.simulation_view.update_vehicle_position_smooth(v, v.start_pos, v.start_pos, 'path', 'path', 0.0)
         
         # 3. Sensörleri ve doluluk yazılarını sıfırla
         self.simulation_view.update_sensors(self.vehicles)
@@ -575,14 +575,14 @@ class MainWindow(QMainWindow):
                     node = route_dict[min_t]
                     loc, ntype = node
                     current_loc = loc
-                    self.simulation_view.update_vehicle_position_smooth(vehicle, loc, ntype)
+                    self.simulation_view.update_vehicle_position_smooth(vehicle, loc, loc, ntype, ntype, 0.0)
                     active_vehicles = True
                 elif self.simulation_time >= max_t:
                     # Görev bitti
                     node = route_dict[max_t]
                     loc, ntype = node
                     current_loc = loc
-                    self.simulation_view.update_vehicle_position_smooth(vehicle, loc, ntype)
+                    self.simulation_view.update_vehicle_position_smooth(vehicle, loc, loc, ntype, ntype, 0.0)
                     if ntype in ('pocket', 'depot'):
                         occupancy[loc] += 1
                 else:
@@ -608,14 +608,13 @@ class MainWindow(QMainWindow):
                             if type1 in ('pocket', 'depot'):
                                 occupancy[loc1] += 1
                                 
-                        # UI'ı pürüzsüz güncelle
-                        self.simulation_view.update_vehicle_position_smooth(vehicle, interpolated_loc, type1, type2, fraction)
+                        self.simulation_view.update_vehicle_position_smooth(vehicle, loc1, loc2, type1, type2, fraction)
                     else:
                         # Fallback (normalde CA* ardışık t'ler üretir)
                         fallback_t = t1 if t1 in route_dict else max_t
                         loc, ntype = route_dict[fallback_t]
                         current_loc = loc
-                        self.simulation_view.update_vehicle_position_smooth(vehicle, loc, ntype)
+                        self.simulation_view.update_vehicle_position_smooth(vehicle, loc, loc, ntype, ntype, 0.0)
                         if ntype in ('pocket', 'depot'):
                             occupancy[loc] += 1
                             
