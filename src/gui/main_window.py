@@ -527,6 +527,9 @@ class MainWindow(QMainWindow):
         # Sensör renklerini güncelle
         self.simulation_view.update_sensors(self.vehicles)
 
+        # VIP araçların parlayan çerçevelerini güncelle
+        self.simulation_view.animate_vips(self.simulation_time)
+
         # UI üzerindeki occupancy (n/slots) yazılarını güncelle
         if hasattr(self.simulation_view, 'capacity_labels'):
             for loc, count in occupancy.items():

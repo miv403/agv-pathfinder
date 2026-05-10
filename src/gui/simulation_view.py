@@ -15,6 +15,7 @@ class SimulationView(QGraphicsView):
         
         self.vehicle_items = {} # vehicle_id -> QGraphicsItem map
         self.sensor_items = {}  # sensor_pos -> QGraphicsItem map
+        self.vip_vehicles = []  # List of VIP vehicle objects to animate
         
         # Ekran boyutlarına göre yolu çizmek için temel ayarlar
         self.scene.setSceneRect(0, 0, 800, 600)
@@ -121,7 +122,14 @@ class SimulationView(QGraphicsView):
     def add_vehicle(self, vehicle):
         """Aracı ekrana ekler."""
         pos = self.get_2d_position(vehicle.position)
-        item = self.scene.addEllipse(pos.x() - 8, pos.y() - 8, 16, 16, QPen(Qt.black), QBrush(QColor(vehicle.color)))
+        
+        # VIP araçlar için daha belirgin bir çerçeve
+        pen = QPen(Qt.black)
+        if vehicle.is_vip:
+            pen.setWidth(3)
+            self.vip_vehicles.append(vehicle)
+        
+        item = self.scene.addEllipse(pos.x() - 8, pos.y() - 8, 16, 16, pen, QBrush(QColor(vehicle.color)))
         self.vehicle_items[vehicle.vehicle_id] = item
 
     def clear_vehicles(self):
@@ -129,6 +137,7 @@ class SimulationView(QGraphicsView):
         for item in self.vehicle_items.values():
             self.scene.removeItem(item)
         self.vehicle_items = {}
+        self.vip_vehicles = []
 
     def get_type_y_offset(self, ntype):
         """Düğüm tipine göre görsel Y ekseni kaymasını (offset) döner."""
@@ -171,3 +180,16 @@ class SimulationView(QGraphicsView):
             # t'yi Hue değerine eşle: 0 (Kırmızı) -> 120 (Yeşil)
             color = QColor.fromHsv(int(t * 120), 255, 255)
             ellipse.setBrush(QBrush(color))
+
+    def animate_vips(self, simulation_time):
+        """VIP araçların çerçeve renklerini zamanla (hue shift) değiştirir."""
+        # Zaman bazlı hue kaydırması (0-360 arası döner)
+        hue = int((simulation_time * 50) % 360)
+        color = QColor.fromHsv(hue, 255, 255)
+        
+        for v in self.vip_vehicles:
+            if v.vehicle_id in self.vehicle_items:
+                item = self.vehicle_items[v.vehicle_id]
+                pen = item.pen()
+                pen.setColor(color)
+                item.setPen(pen)
