@@ -131,6 +131,7 @@ class MainWindow(QMainWindow):
         self.control_panel.add_pocket_signal.connect(self.handle_add_pocket)
         self.control_panel.start_simulation_signal.connect(self.handle_start_simulation)
         self.control_panel.stop_simulation_signal.connect(self.handle_stop_simulation)
+        self.control_panel.pause_simulation_signal.connect(self.handle_pause_simulation)
 
         # 5. Animasyon State
         self.solver_thread = None
@@ -142,6 +143,7 @@ class MainWindow(QMainWindow):
         self.timer_interval = 33
         self.ms_per_logical_step = 500.0
         self.delay_step = 5 # A* scheduling delay parameter
+        self.is_paused = False
 
     def init_menu_bar(self):
         menubar = self.menuBar()
@@ -461,6 +463,7 @@ class MainWindow(QMainWindow):
         """Simülasyonu durdurur ve araçları başlangıç durumuna döndürür."""
         print("Simülasyon durduruldu ve sıfırlandı.")
         self.animation_timer.stop()
+        self.is_paused = False
         self.control_panel.set_simulation_state(False)
         self.edit_menu.setEnabled(True)
         
@@ -483,6 +486,16 @@ class MainWindow(QMainWindow):
         # 4. Bilgi tablosunu başlangıç haline getir
         self.update_info_table_initial()
 
+    def handle_pause_simulation(self):
+        if not self.vehicles or not self.animation_routes:
+            return
+        self.is_paused = not self.is_paused
+        if self.is_paused:
+            self.animation_timer.stop()
+        else:
+            self.animation_timer.start(self.timer_interval)
+        self.control_panel.set_pause_state(self.is_paused)
+
     def update_info_table_initial(self):
         """Tablodaki araç konumlarını ve görev durumlarını başlangıç haline getirir."""
         for v in self.vehicles:
@@ -501,6 +514,7 @@ class MainWindow(QMainWindow):
     def handle_optimization_finished(self, result):
         if result['status'] == 'success':
             print("Optimizasyon başarılı! Animasyon başlıyor...")
+            self.is_paused = False
             
             # Sonuçları Log Paneline Yaz
             self.result_log.clear()

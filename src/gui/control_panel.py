@@ -14,6 +14,7 @@ class ControlPanel(QWidget):
     # Simülasyonu başlatma/durdurma sinyalleri
     start_simulation_signal = pyqtSignal()
     stop_simulation_signal = pyqtSignal()
+    pause_simulation_signal = pyqtSignal()
 
     def __init__(self, road_network):
         super().__init__()
@@ -110,11 +111,21 @@ class ControlPanel(QWidget):
         pocket_group.setLayout(pocket_layout)
         layout.addWidget(pocket_group)
 
-        # 4. Başlat/Durdur Butonu
+        # 4. Başlat/Durdur ve Duraklat Butonları
+        buttons_layout = QHBoxLayout()
+        
         self.start_btn = QPushButton("Simülasyonu Başlat")
         self.start_btn.setStyleSheet("background-color: #4CAF50; color: white; font-weight: bold; padding: 10px;")
         self.start_btn.clicked.connect(self.on_start_clicked)
-        layout.addWidget(self.start_btn)
+        buttons_layout.addWidget(self.start_btn)
+        
+        self.pause_btn = QPushButton("Duraklat")
+        self.pause_btn.setStyleSheet("background-color: #FF9800; color: white; font-weight: bold; padding: 10px;")
+        self.pause_btn.setEnabled(False)
+        self.pause_btn.clicked.connect(self.on_pause_clicked)
+        buttons_layout.addWidget(self.pause_btn)
+        
+        layout.addLayout(buttons_layout)
 
         layout.addStretch()
         self.setLayout(layout)
@@ -188,15 +199,30 @@ class ControlPanel(QWidget):
         else:
             self.start_simulation_signal.emit()
 
+    def on_pause_clicked(self):
+        self.pause_simulation_signal.emit()
+
+    def set_pause_state(self, paused):
+        if paused:
+            self.pause_btn.setText("Devam Et")
+            self.pause_btn.setStyleSheet("background-color: #2196F3; color: white; font-weight: bold; padding: 10px;")
+        else:
+            self.pause_btn.setText("Duraklat")
+            self.pause_btn.setStyleSheet("background-color: #FF9800; color: white; font-weight: bold; padding: 10px;")
+
     def set_simulation_state(self, running):
         """Butonun görünümünü simülasyon durumuna göre değiştirir."""
         self.is_sim_running = running
         if running:
-            self.start_btn.setText("Simülasyonu Durdur (Sıfırla)")
+            self.start_btn.setText("Durdur (Sıfırla)")
             self.start_btn.setStyleSheet("background-color: #f44336; color: white; font-weight: bold; padding: 10px;")
+            self.pause_btn.setEnabled(True)
+            self.set_pause_state(False)
         else:
             self.start_btn.setText("Simülasyonu Başlat")
             self.start_btn.setStyleSheet("background-color: #4CAF50; color: white; font-weight: bold; padding: 10px;")
+            self.pause_btn.setEnabled(False)
+            self.set_pause_state(False)
 
     def refresh_depot_list(self):
         """Yeni depo eklendiğinde combo listesini günceller."""
