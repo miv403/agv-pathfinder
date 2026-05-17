@@ -94,8 +94,8 @@ class MainWindow(QMainWindow):
         # 3. Layout (Splitter ile ikiye bölme)
         # Sol taraf: Simülasyon Görünümü + Bilgi Tablosu
         self.info_table = QTableWidget()
-        self.info_table.setColumnCount(4)
-        self.info_table.setHorizontalHeaderLabels(["Araç ID", "Renk", "Konum", "Görev Durumu"])
+        self.info_table.setColumnCount(6)
+        self.info_table.setHorizontalHeaderLabels(["Araç ID", "Renk", "Konum", "Hız", "Yön", "Görev Durumu"])
         self.info_table.horizontalHeader().setStretchLastSection(True)
         self.info_table.setEditTriggers(QTableWidget.NoEditTriggers)
 
@@ -365,6 +365,8 @@ class MainWindow(QMainWindow):
         self.info_table.setItem(row, 1, color_item)
         
         self.info_table.setItem(row, 2, QTableWidgetItem(str(start_loc)))
+        self.info_table.setItem(row, 3, QTableWidgetItem("0 m/s"))
+        self.info_table.setItem(row, 4, QTableWidgetItem(direction_str))
         
         status_html = ""
         for real_task in v._real_tasks:
@@ -372,7 +374,7 @@ class MainWindow(QMainWindow):
 
         status_label = QLabel()
         status_label.setText(status_html)
-        self.info_table.setCellWidget(row, 3, status_label)
+        self.info_table.setCellWidget(row, 5, status_label)
         v._table_row = row
         
         # Sensör renklerini güncelle
@@ -502,12 +504,14 @@ class MainWindow(QMainWindow):
             if hasattr(v, '_table_row') and hasattr(v, '_real_tasks'):
                 row = v._table_row
                 self.info_table.setItem(row, 2, QTableWidgetItem(str(v.start_pos)))
+                self.info_table.setItem(row, 3, QTableWidgetItem("0 m/s"))
+                self.info_table.setItem(row, 4, QTableWidgetItem("İleri" if v.direction == 1 else "Geri"))
                 
                 status_html = ""
                 for real_task in v._real_tasks:
                     status_html += f'<span style="color:red; margin-right:10px; font-weight:bold;">[{real_task}]</span> '
                 
-                status_label = self.info_table.cellWidget(row, 3)
+                status_label = self.info_table.cellWidget(row, 5)
                 if status_label:
                     status_label.setText(status_html)
 
@@ -584,6 +588,7 @@ class MainWindow(QMainWindow):
                 max_t = max(route_dict.keys())
                 
                 current_loc = 0
+                current_vel = 0
                 if self.simulation_time < min_t:
                     # Henüz başlamadı
                     node = route_dict[min_t]
@@ -623,6 +628,7 @@ class MainWindow(QMainWindow):
                                 occupancy[loc1] += 1
                                 
                         self.simulation_view.update_vehicle_position_smooth(vehicle, loc1, loc2, type1, type2, fraction)
+                        current_vel = loc2 - loc1
                     else:
                         # Fallback (normalde CA* ardışık t'ler üretir)
                         fallback_t = t1 if t1 in route_dict else max_t
@@ -636,6 +642,20 @@ class MainWindow(QMainWindow):
                 if hasattr(vehicle, '_table_row') and hasattr(vehicle, '_real_tasks'):
                     row = vehicle._table_row
                     self.info_table.setItem(row, 2, QTableWidgetItem(str(int(current_loc))))
+                    
+                    # Hız ve Yön sütunlarını güncelle
+                    if current_vel > 0:
+                        vel_str = f"+{int(current_vel)} m/s"
+                        dir_str = "İleri"
+                    elif current_vel < 0:
+                        vel_str = f"{int(current_vel)} m/s"
+                        dir_str = "Geri"
+                    else:
+                        vel_str = "0 m/s"
+                        dir_str = "İleri" if vehicle.direction == 1 else "Geri"
+                        
+                    self.info_table.setItem(row, 3, QTableWidgetItem(vel_str))
+                    self.info_table.setItem(row, 4, QTableWidgetItem(dir_str))
                     
                     comp_times = self.task_completion_times.get(vehicle.vehicle_id, [])
                     completed_count = sum(1 for ct in comp_times if self.simulation_time >= ct)
@@ -665,7 +685,7 @@ class MainWindow(QMainWindow):
                             
                         status_html += f'<span style="color:{color}; margin-right:10px; font-weight:bold;">[{real_task}]</span> '
                         
-                    status_label = self.info_table.cellWidget(row, 3)
+                    status_label = self.info_table.cellWidget(row, 5)
                     if status_label:
                         status_label.setText(status_html)
                             
