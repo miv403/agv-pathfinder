@@ -1,0 +1,235 @@
+% !TeX TXS-program:compile = txs:///pdflatex/[--shell-escape]
+\documentclass[11pt,a4paper]{article}
+
+% Language and encoding
+\usepackage[turkish]{babel}
+\usepackage[T1]{fontenc}
+\usepackage[utf8]{inputenc}
+
+% Page setup
+\usepackage[a4paper,top=2cm,bottom=2cm,left=3cm,right=3cm,marginparwidth=1.75cm]{geometry}
+
+% Core packages
+\usepackage{amsmath,amssymb}
+\usepackage{graphicx}
+\usepackage[colorlinks=true,allcolors=blue]{hyperref}
+
+\usepackage{subcaption}
+
+\usepackage[dvipsnames]{xcolor}
+\usepackage{tikz}
+\usepackage{tikz-cd}
+\usepackage{multicol}
+\usepackage{listings}
+\usepackage{minted}
+\usepackage{hyphsubst}
+\usepackage{setspace}
+\usepackage{ragged2e}
+\usepackage{enumitem}
+\usepackage{newtxtext,newtxmath}
+\usepackage{natbib}
+
+\graphicspath{{img/}}
+
+\def\figureautorefname{Şekil}
+\def\tableautorefname{Tablo}
+\def\subsubsectionautorefname{Bölüm}
+\def\subsectionautorefname{Bölüm}
+\def\sectionautorefname{Bölüm}
+
+
+
+\definecolor{codegreen}{rgb}{0,0.6,0}
+\definecolor{codegray}{rgb}{0.5,0.5,0.5}
+\definecolor{codepurple}{rgb}{0.58,0,0.82}
+\definecolor{backcolour}{rgb}{1,1,1}
+\definecolor{highlight}{rgb}{0.96,0.96,0.96}
+
+\definecolor{Bittersweet}{rgb}{182, 50, 28}
+\definecolor{Cerulean}{rgb}{0, 162, 227}
+\definecolor{Forest}{rgb}{0, 155, 85}
+
+\definecolor{CPPLight}{HTML}{686868}
+\definecolor{CPPSteel}{HTML}{888888}
+\definecolor{CPPDark}{HTML}{262626}
+\definecolor{CPPBlue}{HTML}{4172A3}
+\definecolor{CPPGreen}{HTML}{487818}
+\definecolor{CPPBrown}{HTML}{A07040}
+\definecolor{CPPRed}{HTML}{AD4D3A}
+\definecolor{CPPViolet}{HTML}{7040A0}
+\definecolor{CPPGray}{HTML}{B8B8B8}
+
+\lstdefinestyle{mystyle}{
+    backgroundcolor=\color{backcolour},
+    commentstyle=\color{codegreen},
+    keywordstyle=\color{magenta},
+    numberstyle=\tiny\color{codegray},
+    stringstyle=\color{codepurple},
+    basicstyle=\ttfamily\footnotesize,
+    breakatwhitespace=false,
+    breaklines=true,
+    captionpos=b,
+    keepspaces=true,
+    numbers=left,
+    numbersep=5pt,
+    showspaces=false,
+    showstringspaces=false,
+    showtabs=false,
+    tabsize=2
+}
+
+\lstset{
+    style=mystyle,
+    language=C++,
+    captionpos=t,
+    tabsize=3,
+    frame=single,
+    frameround=tttt,
+    backgroundcolor=\color{highlight},
+    basicstyle=\footnotesize\ttfamily,
+    keywordstyle=\color{blue}\bfseries,
+    commentstyle=\color{green!50!black}\ttfamily,
+    stringstyle=\color{black},
+    morecomment=[s][\color{green!50!black}]{/**}{*/},
+    numbers=left,
+    numberstyle=\tiny\color{darkgray},
+    numbersep=5pt,
+    breaklines=true,
+    showstringspaces=false,
+    emph={label,map,set,multimap,multiset,unordered_map,unordered_set,
+        unordered_multiset,unordered_multimap,vector,string,list,deque,
+        array,stack,forwared_list,iostream,memory,shared_ptr,unique_ptr,
+        random,bitset,ostream,istream,cout,cin,endl,move,default_random_engine,
+        uniform_int_distribution,iterator,algorithm,functional,bing,numeric},
+    emphstyle=\color{CPPViolet},
+    inputencoding=utf8,
+    extendedchars=true,
+    literate=
+    {Ö}{{\"O}}1
+    {Ä}{{\"A}}1
+    {Ü}{{\"U}}1
+    {ß}{{\ss}}1
+    {ü}{{\"u}}1
+    {ä}{{\"a}}1
+    {ö}{{\"o}}1
+    {ı}{{\i}}1
+    {İ}{{\.{I}}}1
+    {ğ}{{\u{g}}}1
+    {Ğ}{{\u{G}}}1
+    {ş}{{\c{s}}}1
+    {Ş}{{\c{S}}}1
+    {ç}{{\c{c}}}1
+    {Ç}{{\c{C}}}1
+}
+
+% Paragraph formatting from the Word template
+\setlength{\parindent}{0pt}
+\setlength{\parskip}{1\baselineskip}
+\setstretch{1.0}
+\setcounter{secnumdepth}{2}
+
+\makeatletter
+\renewcommand{\section}{\@startsection{section}{1}{0pt}{\baselineskip}{0.5\baselineskip}{\normalfont\bfseries\fontsize{12}{14}\selectfont}}
+\renewcommand{\subsection}{\@startsection{subsection}{2}{0pt}{\baselineskip}{0.5\baselineskip}{\normalfont\bfseries\fontsize{12}{14}\selectfont}}
+\renewcommand{\subsubsection}{\@startsection{subsubsection}{2}{0pt}{\baselineskip}{0.5\baselineskip}{\normalfont\bfseries\fontsize{12}{14}\selectfont}}
+\makeatother
+
+\newcommand{\reporttitle}{Çalışma Başlığı}
+\newcommand{\reportauthors}{Ahmet Emin KIZILKAN}
+\newcommand{\reportaffiliation}{
+{\small Karadeniz Teknik Üniversitesi \\
+Mühendislik Fakültesi \\
+Bilgisayar Mühendisliği}}
+
+\title{\reporttitle}
+\author{\reportauthors\\\reportaffiliation}
+\date{\today}
+
+\begin{document}
+    
+    \shorthandoff{=}
+    
+    % Kapak sayfası
+    \begin{titlepage}
+        \centering
+        \vspace*{0.22\textheight}
+        
+        {\bfseries\fontsize{14}{18}\selectfont \reporttitle\par}
+        \vspace{1.75cm}
+        
+        {\fontsize{13}{16}\selectfont \reportauthors\par}
+        \vspace{0.6cm}
+        
+        {\fontsize{13}{16}\selectfont \reportaffiliation\par}
+        \vfill
+    \end{titlepage}
+    
+    \setcounter{page}{2}
+    
+    % İkinci sayfada başlık tekrarı
+    \begin{center}
+        {\bfseries\fontsize{14}{18}\selectfont \reporttitle\par}
+        \vspace{0.75cm}
+        {\fontsize{13}{16}\selectfont \reportauthors\par}
+    \end{center}
+
+    \section*{Özet}
+    \justifying
+    [Bu alana en fazla 250 kelimelik özetinizi yazın. Özette çalışmanın amacı, araştırma yöntemi, temel bulgular ve sonuç/öneriler açık ve kısa biçimde verilmelidir. Metin tek satır aralığında ve iki yana yaslı olmalıdır.]
+    
+    \textbf{Anahtar Kelimeler:} \textit{anahtar kelime 1, anahtar kelime 2, anahtar kelime 3}
+    
+    \section{Giriş}
+    [Bu bölümde çalışmanın problemi, amacı, kapsamı ve gerekçesi verilmelidir. Paragraflar Times benzeri yazı tipinde, 12 punto, iki yana yaslı ve paragraf girintisiz olacak şekilde hazırlanmalıdır. Literatüre gönderme yapmak için örneğin \citep{ornek2024} veya \citet{knuth1984} kullanabilirsiniz.]
+
+    
+    \section{Literatür Taraması}
+    [Bu bölümde konuya ilişkin temel çalışmalar, yaklaşımlar ve araştırma boşluğu özetlenmelidir. Gerekirse alt başlıklar kullanılabilir.]
+    
+    \include{yöntem.tex}
+
+    \include{bulgular-ve-senaryo-analizi.tex}
+    
+    \section{Sonuç ve Öneriler}
+    [Bu bölümde elde edilen sonuçlar özetlenmeli; uygulamaya ve gelecekteki çalışmalara yönelik öneriler sunulmalıdır.]
+    
+    \bibliographystyle{apalike}
+    \bibliography{references}
+    
+    % İsteğe bağlı örnekler
+    \begin{table}[h!]
+        \centering
+        \caption{Örnek tablo başlığı}
+        \begin{tabular}{ll}
+            \hline
+            Sütun 1 & Sütun 2 \\
+            \hline
+            Veri A & Veri B \\
+            \hline
+        \end{tabular}
+    \end{table}
+    
+    \begin{figure}[h!]
+        \centering
+        \fbox{\rule{0pt}{4cm}\rule{0.7\linewidth}{0pt}}
+        \caption{Örnek şekil başlığı}
+    \end{figure}
+    
+\end{document}
+
+\begin{figure}[h]
+    \begin{subfigure}{.5\textwidth}
+        \centering
+        \includegraphics[width=0.9\linewidth]{client-server.png}
+        \caption{\label{fig:clientServer3}İstemci-Sunucu modeli üzerinde aygıtların bağlanması}
+        \label{fig:sfig1}
+    \end{subfigure}%
+    \begin{subfigure}{.5\textwidth}
+        \centering
+        \includegraphics[width=0.9\linewidth]{dağıtık-sistem.png}
+        \caption{\label{fig:distributed3}Dağıtık modelde aygıtların birbiri ile veri aktarımı}
+        \label{fig:sfig2}
+    \end{subfigure}
+    \caption{İstemci-Sunucu ve Dağıtık Model}
+    \label{fig:fig}
+\end{figure}
