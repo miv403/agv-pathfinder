@@ -137,9 +137,10 @@ class CooperativeAStar:
         sorted_vehicles = sorted(
             vehicles,
             key=lambda v: (
-                not v.is_vip,                   # VIP olanlar önce (False < True mantığı için not kullanılır)
-                abs(v.current_target - v.start_pos), # Hedefe kalan mesafe (Küçükten Büyüğe) -> Öndekiler önce çıkar
-                -v.total_mission_distance       # Toplam görev yükü (Büyükten Küçüğe) -> Eşitlik durumunda çok işi olan önce çıksın
+                not v.is_vip,                           # 1. VIP olanlar önce
+                -v.start_pos,                           # 2. Başlangıca en uzak (ileride) olan önce çizelgelenir
+                abs(v.current_target - v.start_pos),    # 3. Hedefe kalan mesafe (Eşitlik bozucu)
+                -v.total_mission_distance               # 4. Toplam görev yükü
             )
         )
 
