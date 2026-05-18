@@ -1,6 +1,6 @@
 \section{Yöntem}
 
-[Bu bölümde araştırma deseni, veri toplama araçları, ölçekler, analiz adımları ve uygulama süreci açıklanmalıdır. Şablon dosyasındaki nota uygun olarak matematiksel model, gerekli yaklaşım ve örnek uygulama burada verilebilir.]
+% [Bu bölümde araştırma deseni, veri toplama araçları, ölçekler, analiz adımları ve uygulama süreci açıklanmalıdır. Şablon dosyasındaki nota uygun olarak matematiksel model, gerekli yaklaşım ve örnek uygulama burada verilebilir.]
 
 Bu çalışma kapsamında, tek şeritli bir yol üzerinde hareket eden otonom araçların güvenli ve verimli bir şekilde yönlendirilmesi için bir çizge yapısı üzerinde uzay-zaman  tabanlı bir rezervasyon modeli kurgulanmıştır. Problem, otonom araçların belirli depo noktalarından yük alıp başlangıca dönmesini hedeflerken; çarpışma, kilitlenme ve kapasite kısıtlarını aşmamayı amaçlayan bir çizelgeleme problemi olarak ele alınmıştır.
 
@@ -71,7 +71,7 @@ Depolar için:
 
 biçiminde ifade edilebilir.
 
-$\mathbf{1}(x_i(t) = c)$: Gösterme (Indicator) fonksiyonudur. Eğer araç o an $c$ konumundaysa $1$, değilse $0$ değerini alır.
+\subparagraph{$\mathbf{1}(x_i(t) = c)$:} Gösterme (\textit{indicator}) fonksiyonudur. Eğer o an araç $c$-konumundaysa $1$, değilse $0$ değerini alır.
  
 \paragraph{Görev Kısıtı} Her araç, turunu tamamlamadan önce en az bir depoyu ziyaret etmelidir. Her araç turunu tamamladığında ($t = y_i$ anında), konumu $x_i(y_i) = 0$ olmalı ve $t < y_i$ için en az bir kez $x_i(t) \in G$ sağlanmalıdır.
 
@@ -268,7 +268,7 @@ Buna göre $i$-aracının öncelik vektörü $\rho_i$ şu şekilde ifade edilir:
 
 Yalnızca hedefe olan uzaklığın ($d_i$) baz alınması, araçların farklı istasyonlara yöneldiği senaryolarda \textbf{yapay kilitlenmelere} yol açmaktadır. Örneğin; 20. ve 30. metrelerde konumlanan iki araçtan, 20. metredekinin hedefi Depo 70, 30. metredekinin hedefi ise Depo 120 olsun. Sadece hedefe yakınlık kriteri uygulandığında, 20. metredeki araç hedefine daha yakın olduğu için ($50 < 90$) ilk sırada çizelgelenmeye çalışılacaktır. Ancak tek şeritli hat üzerinde önünde bulunan 30. metredeki araç henüz hareket etmediği için $d_{\min}$ güvenlik tamponu anında ihlal edilecek ve kilitlenme oluşacaktır. Vektöre eklenen $-x_{\text{başlangıç}, i}$ bileşeni sayesinde, hat üzerinde fiziksel olarak daha önde olan (30. metredeki) araç ilk önce çizelgelenir; böylece güvenlik tamponunu arkasından gelen araç için temizleyerek yapay kilitlenmeyi engeller.
 
-Problem kısıtları gereği, özel öncelikli araçlar daima başlangıç noktasında (0. metre) konumlanır ve tek bir görev (belirli bir depoya gidip dönme) üstlenirler. Algoritma bu araçları mutlak ilk sıraya alarak çizer. Bu kısıt, öncelikli araçların sistem henüz boşken rezerve edilmemiş bir uzay-zaman tablosunda ilerlemesini sağlar; böylece diğer araçların yaratabileceği yoğunluğa ve gecikmelere takılmadan, görevlerini matematiksel olarak mümkün olan en kısa sürede (optimal makespan ile) tamamlamaları garanti altına alınır.
+Özel öncelikli araçlar daima başlangıç noktasında (0. metre) konumlanır ve tek bir görev (belirli bir depoya gidip dönme) üstlenirler. Algoritma bu araçları mutlak ilk sıraya alarak çizelgeler. Bu sınırlamayla birlikte öncelikli araçların sistem henüz boşken tahsis edilmemiş bir uzay-zaman tablosunda ilerlemesini sağlar. Böylece diğer araçların yaratabileceği yoğunluğa ve gecikmelere takılmadan görevlerini matematiksel olarak mümkün olan en kısa sürede (\textit{optimal makespan}) tamamlamaları garantilenir.
 
 İki araç karşılaştırıldığında sözlüksel sıralama (\textit{lexicographical order}) uygulanır. Eğer $\rho_i < \rho_j$ ise, $i$-aracı $j$-aracından önce çizelgelenir. Bu yapı sayesinde özel öncelikli araçlara mutlak üstünlük verilirken, eşitlik durumlarında sırasıyla hedefe yakınlık ve toplam iş yükü devreye girer.
 
@@ -280,7 +280,7 @@ Problem kısıtları gereği, özel öncelikli araçlar daima başlangıç nokta
     \label{fig:uzay-zaman-2}
 \end{figure}
 
-\autoref{fig:uzay-zaman-2}'de daha önce çizelgelenmiş A2 aracı ve yol vermek için depoya giren A1 aracı bulunmaktadır. Bu örnekte A2 aracı depoya uğradıktan sonra depodan ayrılmakta ardından A1 aracı diğer aracın güvenlik tamponundan çıktıktan sonra depodan dışarı çıkmaktadır.
+\autoref{fig:uzay-zaman-2}'de daha önce çizelgelenmiş $A_2$ aracı ve yol vermek için depoya giren $A_1$ aracı bulunmaktadır. Bu örnekte $A_2$ aracı depoya uğradıktan sonra depodan ayrılmakta ardından $A_1$ aracı diğer aracın güvenlik tamponundan çıktıktan sonra depodan dışarı çıkmaktadır.
 
 \subsubsection{Algoritma Karmaşıklığı}
 
@@ -288,4 +288,4 @@ Problem kısıtları gereği, özel öncelikli araçlar daima başlangıç nokta
 
 % Arama uzayının boyutu, fiziksel düğüm sayısı ($|V_{fiziksel}|$) ve algoritmanın ulaşabileceği maksimum zaman adımı ($T_{max}$) ile orantılıdır. Tek bir araç için en kötü durum zaman karmaşıklığı, 3 boyutlu graf üzerindeki standart A* davranışına paralel olarak $O(|V_{fiziksel}| \times T_{max} \log(|V_{fiziksel}| \times T_{max}))$ biçiminde ifade edilebilir. Toplam karmaşıklık ise $N$ adet araç için bu değerin araç sayısı ile çarpılmasıyla bulunur. Yoğun trafik senaryolarında, kilitlenme çözücü (\textit{deadlock resolver}) mekanizmasının devreye girmesi ve araçların yola çıkış zamanlarını ($t_{\text{başlangıç}}$) öteleyerek A* aramasını tekrar başlatması, algoritmik iş yükünü artıran (üstel büyümeye yaklaşan) bir faktördür. Ancak otonom araç yönlendirme problemlerinin doğası gereği, bu hesaplamalar araçlar yola çıkmadan önce çevrimdışı (offline) planlama aşamasında yapıldığından, elde edilen işlem süresi maliyeti sistemin kilitlenmeden güvenli çalışması adına kabul edilebilir bir düzeydedir.
 
-İşbirlikçi A* algoritmasının zaman karmaşıklığı, fiziksel yol düğümlerinin ($V$) ve maksimum zaman adımının ($T_{max}$) oluşturduğu arama uzayına bağlıdır. Tek bir araç için en kötü durum (worst-case) zaman karmaşıklığı $O(|V| \times T_{max} \log(|V| \times T_{max}))$ olarak ifade edilebilir. Algoritmanın çalışma süresini asıl optimize eden unsur, merkezi rezervasyon tablosunun bir Hash Map (sözlük) veri yapısında kurgulanmasıdır. Bu sayede algoritmanın uzay-zaman tablosundaki çakışma ve güvenlik kontrolleri $O(1)$ sabit sürede yapılarak, dinamik araç sayısının yarattığı işlem yükü minimize edilmiştir.
+İşbirlikçi A* algoritmasının zaman karmaşıklığı, fiziksel yol düğümlerinin ($V$) ve maksimum zaman adımının ($T_{max}$) oluşturduğu arama uzayına bağlıdır. Tek bir araç için en kötü durum (worst-case) zaman karmaşıklığı $O(|V| \times T_{max} \cdot \log(|V| \times T_{max}))$ olarak ifade edilebilir. Algoritmanın çalışma süresini asıl optimize eden unsur, merkezi rezervasyon tablosunun bir Hash Map (sözlük) veri yapısında kurgulanmasıdır. Bu sayede algoritmanın uzay-zaman tablosundaki çakışma ve güvenlik kontrolleri $O(1)$ sabit sürede yapılarak, dinamik araç sayısının yarattığı işlem yükü minimize edilmiştir.
