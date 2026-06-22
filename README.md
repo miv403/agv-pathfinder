@@ -2,7 +2,7 @@
 
 *Cooperative A* Multi-Agent Pathfinding*
 
-![](./rapor/img/senaryolar/0-zıt-yön-çatışması/00-başlangıç.png)
+![](./img/senaryolar/0-zıt-yön-çatışması/00-başlangıç.png)
 
 ## bağımlılıklar
 
