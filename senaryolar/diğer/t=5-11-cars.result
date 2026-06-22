@@ -1,0 +1,33 @@
+Yeni Depo Eklendi: Mesafe=70
+Yeni Depo Eklendi: Mesafe=120
+Yeni Depo Eklendi: Mesafe=170
+Yeni Depo Eklendi: Mesafe=240
+Yeni Cep Eklendi: Mesafe=30
+Yeni Cep Eklendi: Mesafe=80
+Yeni Cep Eklendi: Mesafe=200
+Yeni Araç Eklendi: ID=1, Konum=0, Yön=İleri, Görevler=[170, 240], VIP=False
+Araç 1 nihai görev listesi: [170, 0, 240, 0]
+Yeni Araç Eklendi: ID=2, Konum=0, Yön=İleri, Görevler=[120], VIP=False
+Araç 2 nihai görev listesi: [120, 0]
+Yeni Araç Eklendi: ID=3, Konum=0, Yön=İleri, Görevler=[70, 120], VIP=False
+Araç 3 nihai görev listesi: [70, 0, 120, 0]
+Yeni Araç Eklendi: ID=4, Konum=0, Yön=İleri, Görevler=[70], VIP=False
+Araç 4 nihai görev listesi: [70, 0]
+Yeni Araç Eklendi: ID=5, Konum=0, Yön=İleri, Görevler=[170], VIP=False
+Araç 5 nihai görev listesi: [170, 0]
+Yeni Araç Eklendi: ID=6, Konum=0, Yön=İleri, Görevler=[120, 170], VIP=False
+Araç 6 nihai görev listesi: [120, 0, 170, 0]
+Yeni Araç Eklendi: ID=7, Konum=0, Yön=İleri, Görevler=[70, 120, 170, 240], VIP=False
+Araç 7 nihai görev listesi: [70, 0, 120, 0, 170, 0, 240, 0]
+Yeni Araç Eklendi: ID=8, Konum=0, Yön=İleri, Görevler=[70, 240], VIP=False
+Araç 8 nihai görev listesi: [70, 0, 240, 0]
+Yeni Araç Eklendi: ID=9, Konum=0, Yön=İleri, Görevler=[70, 170], VIP=False
+Araç 9 nihai görev listesi: [70, 0, 170, 0]
+Yeni Araç Eklendi: ID=10, Konum=0, Yön=İleri, Görevler=[120, 240], VIP=False
+Araç 10 nihai görev listesi: [120, 0, 240, 0]
+Yeni Araç Eklendi: ID=11, Konum=0, Yön=İleri, Görevler=[170], VIP=False
+Araç 11 nihai görev listesi: [170, 0]
+Simülasyon başlıyor... Algoritma çalışıyor.
+[CA*] Hesaplama süresi: 20.30 ms (11 araç)
+Optimizasyon başarılı! Animasyon başlıyor...
+Animasyon tamamlandı. Toplam süre: t=303
