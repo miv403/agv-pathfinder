@@ -77,7 +77,7 @@ class SpeedDialog(QDialog):
 class MainWindow(QMainWindow):
     def __init__(self):
         super().__init__()
-        self.setWindowTitle("Otonom Araç Optimizasyonu (Cooperative A*)")
+        self.setWindowTitle("Çok Etmenli Yol Bulma")
         # self.resize(1000, 600)
         self.resize(1100, 700)
         
