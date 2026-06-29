@@ -1,10 +1,11 @@
+
 # önceliklendirilmiş işbirlikçi A* temelli çok etmenli yol bulma
 
 *Cooperative A\* Multi-Agent Pathfinding*
 
 Detaylı bilgi için [paper.pdf](https://github.com/miv403/agv-pathfinder/blob/master/paper.pdf) dosyasını inceleyebilirsiniz.
 
-<video src="https://github.com/miv403/agv-pathfinder/raw/refs/heads/master/img/video.mp4" controls preload></video>
+<video src="https://github.com/user-attachments/assets/7cb51cae-3ed8-4f2e-915f-284c4d756cae" controls preload></video>
 
 ## Özet
 
