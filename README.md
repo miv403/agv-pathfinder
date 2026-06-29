@@ -4,7 +4,7 @@
 
 Detaylı bilgi için [paper.pdf](https://github.com/miv403/agv-pathfinder/blob/master/paper.pdf) dosyasını inceleyebilirsiniz.
 
-<video src="./img/video.mp4" controls preload></video>
+<video src="https://github.com/miv403/agv-pathfinder/raw/refs/heads/master/img/video.mp4" controls preload></video>
 
 ## Özet
 
